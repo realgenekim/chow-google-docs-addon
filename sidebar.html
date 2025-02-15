@@ -14,6 +14,7 @@
     <button onclick="reloadSidebar()">Reload Sidebar</button>
     <button onclick="getSelection2()">Get Selection</button>
     <button onclick="getDoc()">Read Doc</button>
+    <button onclick="copyToClipboard()">Copy to Clipboard</button>
     <div id="selected-text" style="margin-top: 10px; white-space: pre-wrap;"></div>
     <div id="debug" style="margin-top: 20px; color: red;"></div>
   </body>
@@ -55,4 +56,13 @@
   function reloadSidebar() {
       location.reload();  // Reloads the sidebar without closing it
     }
+
+  async function copyToClipboard() {
+    try {
+      await navigator.clipboard.writeText('abc');
+      document.getElementById('debug').innerHTML += '<br>Copied to clipboard!';
+    } catch (err) {
+      document.getElementById('debug').innerHTML += '<br>Failed to copy: ' + err;
+    }
+  }
 </script>

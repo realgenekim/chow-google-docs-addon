@@ -51,7 +51,7 @@ function getSelectedText() {
 
 function getDoc() {
   try {
-    const doc = DocumentApp.openById('1bUm0na2NQ1h-aWmc8YtzOG_jJm2rI7vsix4y5ALeKZM');
+    const doc = DocumentApp.openById('15e3EIbRqtJOZWUtPwTZG9zjTpoCQ5b1VFtNl8KZS_Lo');
     const body = doc.getBody();
     return body.getText();
   } catch (error) {
