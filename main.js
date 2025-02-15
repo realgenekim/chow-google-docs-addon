@@ -25,3 +25,24 @@ function showSidebar() {
       .setTitle("My Add-on");
   DocumentApp.getUi().showSidebar(html);
 }
+
+function getSelectedText() {
+  const doc = DocumentApp.getActiveDocument();
+  const selection = doc.getSelection();
+  
+  if (!selection) {
+    return "No text selected";
+  }
+  
+  const elements = selection.getSelectedElements();
+  let selectedText = "";
+  
+  for (let i = 0; i < elements.length; i++) {
+    const element = elements[i].getElement();
+    if (element.editAsText) {
+      selectedText += element.asText().getText();
+    }
+  }
+  
+  return selectedText || "No text selected";
+}
