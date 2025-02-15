@@ -11,7 +11,9 @@
     <p>This is a sidebar with a button. 33445533</p>
     <button onclick="onButtonClick()">Click Me</button>
     <br><br>
+    <button onclick="reloadSidebar()">Reload Sidebar</button>
     <button onclick="getSelection2()">Get Selection</button>
+    <button onclick="getDoc()">Read Doc</button>
     <div id="selected-text" style="margin-top: 10px; white-space: pre-wrap;"></div>
     <div id="debug" style="margin-top: 20px; color: red;"></div>
   </body>
@@ -38,4 +40,19 @@
       })
       .getSelectedText();
   }
+
+  function getDoc() {
+    document.getElementById('debug').innerHTML += '<br>getDoc called!';
+    google.script.run
+      .withSuccessHandler(function(content) {
+        document.getElementById('selected-text').innerHTML = content;
+      })
+      .withFailureHandler(function(error) {
+        document.getElementById('debug').innerHTML += '<br>Error: ' + error;
+      })
+      .getDoc();
+  }
+  function reloadSidebar() {
+      location.reload();  // Reloads the sidebar without closing it
+    }
 </script>

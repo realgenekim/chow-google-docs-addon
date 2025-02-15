@@ -17,6 +17,7 @@ function onOpen() {
   DocumentApp.getUi().createMenu('Custom Add-on')
       .addItem('Fetch Data', 'fetchData')
       .addItem('Open Sidebar', 'showSidebar')
+      .addItem('Reload Sidebar', 'showSidebar')  // NEW MENU OPTION
       .addToUi();
 }
 
@@ -47,13 +48,19 @@ function getSelectedText() {
   return selectedText || "No text selected";
 }
 
-function getTimestamp() {
-  const timestamp = new Date();
-  return "Current Timestamp: " + timestamp.toISOString();
+
+function getDoc() {
+  try {
+    const doc = DocumentApp.openById('1bUm0na2NQ1h-aWmc8YtzOG_jJm2rI7vsix4y5ALeKZM');
+    const body = doc.getBody();
+    return body.getText();
+  } catch (error) {
+    Logger.log('Error in getDoc: ' + error);
+    return 'Error reading document: ' + error.toString();
+  }
 }
 
-function testTimestamp() {
-  const version = getTimestamp();
-  Logger.log('Deployment Version Info:');
-  Logger.log(version);
+function testgetDoc() {
+  // Logger.log(getDoc())
+  Logger.log("TEST")
 }
