@@ -11,7 +11,7 @@
     <p>This is a sidebar with a button. 33445533</p>
     <button onclick="onButtonClick()">Click Me</button>
     <br><br>
-    <button onclick="onButtonClick()">Get Selection</button>
+    <button onclick="getSelection2()">Get Selection</button>
     <div id="selected-text" style="margin-top: 10px; white-space: pre-wrap;"></div>
     <div id="debug" style="margin-top: 20px; color: red;"></div>
   </body>
@@ -25,17 +25,17 @@
 
   document.getElementById('debug').innerHTML += '<br>BEGIN!';
   
-  function getSelection() {
+  function getSelection2() {
     document.getElementById('debug').innerHTML += '<br>getSelection called!';
-    // document.getElementById('debug').innerHTML += '<br>getSelection called';
-    // google.script.run
-    //   .withSuccessHandler(function(text) {
-    //     document.getElementById('debug').innerHTML += '<br>Success handler called with text: ' + text;
-    //     document.getElementById('selected-text').innerHTML = text;
-    //   })
-    //   .withFailureHandler(function(error) {
-    //     document.getElementById('debug').innerHTML += '<br>Error: ' + error;
-    //   })
-    //   .getSelectedText();
+    document.getElementById('debug').innerHTML += '<br>getSelection called';
+    google.script.run
+      .withSuccessHandler(function(text) {
+        document.getElementById('debug').innerHTML += '<br>Success handler called with text: ' + text;
+        document.getElementById('selected-text').innerHTML = text;
+      })
+      .withFailureHandler(function(error) {
+        document.getElementById('debug').innerHTML += '<br>Error: ' + error;
+      })
+      .getSelectedText();
   }
 </script>
