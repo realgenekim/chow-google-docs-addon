@@ -46,3 +46,14 @@ function getSelectedText() {
   
   return selectedText || "No text selected";
 }
+
+function getTimestamp() {
+  const timestamp = new Date();
+  return "Current Timestamp: " + timestamp.toISOString();
+}
+
+function testTimestamp() {
+  const version = getTimestamp();
+  Logger.log('Deployment Version Info:');
+  Logger.log(version);
+}

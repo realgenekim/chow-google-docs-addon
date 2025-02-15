@@ -2,42 +2,40 @@
 <html>
   <head>
     <script>
-      function onButtonClick() {
-        google.script.run.showAlert();
-      }
       
-      function getSelection() {
-        google.script.run
-          .withSuccessHandler(function(text) {
-            document.getElementById('selected-text').innerHTML = text;
-          })
-          .getSelectedText();
-      }
-
-      function loadDeploymentVersion() {
-        google.script.run
-          .withSuccessHandler(function(version) {
-            document.getElementById('deployment-version').innerHTML = 'Deployment Version: ' + version;
-          })
-          .getDeploymentVersion();
-      }
-
-      // Load version when sidebar opens
-      loadDeploymentVersion();
+     
     </script>
   </head>
   <body>
     <h3>Welcome to My Add-on</h3>
-    <div id="deployment-version" style="color: #666; margin-bottom: 10px;"></div>
-    <p>This is a sidebar with a button.  TTTT </p>
+    <p>This is a sidebar with a button. 33445533</p>
     <button onclick="onButtonClick()">Click Me</button>
     <br><br>
-    <button onclick="getSelection()">Get Selection</button>
+    <button onclick="onButtonClick()">Get Selection</button>
     <div id="selected-text" style="margin-top: 10px; white-space: pre-wrap;"></div>
+    <div id="debug" style="margin-top: 20px; color: red;"></div>
   </body>
 </html>
+
 <script>
   function onButtonClick() {
+    document.getElementById('debug').innerHTML += '<br>onButtonClick called!';
     google.script.run.showAlert();
+  }
+
+  document.getElementById('debug').innerHTML += '<br>BEGIN!';
+  
+  function getSelection() {
+    document.getElementById('debug').innerHTML += '<br>getSelection called!';
+    // document.getElementById('debug').innerHTML += '<br>getSelection called';
+    // google.script.run
+    //   .withSuccessHandler(function(text) {
+    //     document.getElementById('debug').innerHTML += '<br>Success handler called with text: ' + text;
+    //     document.getElementById('selected-text').innerHTML = text;
+    //   })
+    //   .withFailureHandler(function(error) {
+    //     document.getElementById('debug').innerHTML += '<br>Error: ' + error;
+    //   })
+    //   .getSelectedText();
   }
 </script>
