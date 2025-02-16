@@ -23,11 +23,11 @@ Enclosed in this prompt is "mansuscript-context" which contains the full manscri
 
 Please critique this portion, included as as "section-to-be-worked-on".`;
 
-function assemblePrompt(): string {
+function assemblePrompt(manuscript: string): string {
   const promptStructure: PromptSection[] = [
     { "project-goals": PROJECT_GOALS_TEXT },
     { "your-task": YOUR_TASK_TEXT },
-    { "manuscript-context": "" },
+    { "manuscript-context": manuscript },
     { "section-to-be-worked-on": "" }
   ];
   
