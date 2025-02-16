@@ -64,6 +64,11 @@ function getSelectedText() {
 let globalContentBook = "";  // Declare global variable
 let globalSelection = ""
 
+function generatePromptAndCopyToClipboard() {
+  const prompt = assemblePrompt(globalContentBook, globalSelection);
+  return JSON.stringify(prompt, null, 2); // Returns formatted JSON string
+}
+
 function getDoc() {
   // Store markdown content in global variable for later use
   globalContentBook = fetchBookManuscriptMarkdown();
