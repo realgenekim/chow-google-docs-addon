@@ -9,12 +9,17 @@
   <body>
     <h3>CHOW Workbench</h3>
     <p>Written to make it easier to CHOW: assemble and sling prompts around to paste them into an LLM.</p>
-        <br><br>
-    <button onclick="reloadSidebar()">Reload Sidebar</button>
-    <button onclick="getSelection2()">Get Selection</button>
-    <button onclick="getDoc()">Read Source Docs</button>
-    <button onclick="copyToClipboard()">Copy to Clipboard</button>
+        <br>
+        
     <div id="selected-text" style="margin-top: 10px; white-space: pre-wrap;"></div>
+    <div id="manuscript-context" style="margin-top: 10px; white-space: pre-wrap;">Manuscript not loaded: click "Get Document" to load</div>
+
+    <br>
+
+    <button onclick="reloadSidebar()">Reload Sidebar</button>
+    <button onclick="getDoc()">Read Source Docs</button>
+    <button onclick="getSelection2()">Get Selection</button>
+    <button onclick="copyToClipboard()">Copy to Clipboard</button>  
     <div id="debug" style="margin-top: 20px; color: red;"></div>
   </body>
 </html>
@@ -46,13 +51,13 @@
     google.script.run
       .withSuccessHandler(function(content) {
         const wordCount = content.trim().split(/\s+/).length;
-        document.getElementById('selected-text').innerHTML = `Word count: ${wordCount}`;
+        document.getElementById('manuscript-context').innerHTML = `Word count: ${wordCount}`;
       })
       .withFailureHandler(function(error) {
         document.getElementById('debug').innerHTML += '<br>Error: ' + error;
       })
       .getDoc();
-      document.getElementById('debug').innerHTML += '<br>getDoc returned!';
+      document.getElementById('debug').innerHTML += '<br>getDoc returned (takes about 10s to finish loading)!';
   }
   function reloadSidebar() {
     google.script.run.triggerSidebarReload();  // Calls the function in Apps Script
