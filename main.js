@@ -1,18 +1,12 @@
-function triggerSidebarReload() {
-  // Wait a moment before reopening to ensure the sidebar has fully closed
-  Utilities.sleep(300);  // Small delay to prevent execution race conditions
-  showSidebar();  // Reopens the sidebar
-}
+// function triggerSidebarReload() {
+//   Utilities.sleep(300);
+//   showSidebar();
+// }
 
 function showSidebar() {
-  var timestamp = new Date().getTime(); // Cache-busting timestamp
   var html = HtmlService.createHtmlOutputFromFile('sidebar')
-      .setTitle("My Add-on")
+      .setTitle("CHOW Workbench")
       .setSandboxMode(HtmlService.SandboxMode.IFRAME);
-  
-  // Inject JavaScript to reload only if code has changed
-  html.append('<script>var cacheBuster = "' + timestamp + '";</script>');
-
   DocumentApp.getUi().showSidebar(html);
 }
 
@@ -35,13 +29,13 @@ function onOpen() {
   DocumentApp.getUi().createMenu('Custom Add-on')
       .addItem('Fetch Data', 'fetchData')
       .addItem('Open Sidebar', 'showSidebar')
-      .addItem('Reload Sidebar', 'showSidebar')  // NEW MENU OPTION
       .addToUi();
 }
 
 function showSidebar() {
   var html = HtmlService.createHtmlOutputFromFile('sidebar')
-      .setTitle("My Add-on");
+      .setTitle("CHOW Workbench")
+      .setSandboxMode(HtmlService.SandboxMode.IFRAME);
   DocumentApp.getUi().showSidebar(html);
 }
 

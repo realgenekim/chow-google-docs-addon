@@ -31,7 +31,7 @@
     </style>
   </head>
   <body>
-    <h3>CHOW Workbench</h3>
+    <h3>CHOW Workbench 2</h3>
     <p>Written to make it easier to CHOW: assemble and sling prompts around to paste them into an LLM.</p>
         <br>
         
@@ -94,8 +94,8 @@
       document.getElementById('debug').innerHTML += '<br>getDoc returned (takes about 10s to finish loading)!';
   }
   function reloadSidebar() {
-    google.script.run.triggerSidebarReload();  // Calls the function in Apps Script
-    google.script.host.close();  // Closes the sidebar
+    // Call showSidebar() directly - no need to close first
+    google.script.run.showSidebar();
   }
 
   async function copyToClipboard() {
