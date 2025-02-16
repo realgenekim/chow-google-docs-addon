@@ -6,7 +6,7 @@ function triggerSidebarReload() {
 
 function showSidebar() {
   var timestamp = new Date().getTime(); // Cache-busting timestamp
-  var html = HtmlService.createHtmlOutputFromFile('Sidebar')
+  var html = HtmlService.createHtmlOutputFromFile('sidebar')
       .setTitle("My Add-on")
       .setSandboxMode(HtmlService.SandboxMode.IFRAME);
   
@@ -68,6 +68,7 @@ function getSelectedText() {
 
 
 let globalContentBook = "";  // Declare global variable
+let globalSelection = ""
 
 function getDoc() {
   // Store markdown content in global variable for later use
@@ -104,4 +105,8 @@ function fetchBookManuscriptMarkdown() {
     Logger.log('Error in fetchBookManuscriptMarkdown: ' + error);
     return 'Error generating combined markdown: ' + error.toString();
   }
+}
+
+function setGlobalSelection(text) {
+  globalSelection = text;
 }

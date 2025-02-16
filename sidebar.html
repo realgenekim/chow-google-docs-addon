@@ -50,7 +50,7 @@
     <button onclick="reloadSidebar()">Reload Sidebar</button>
     <button onclick="getDoc()">Read Source Docs</button>
     <button onclick="getSelection2()">Get Selection</button>
-    <button onclick="copyToClipboard()">Copy to Clipboard</button>  
+    <button onclick="copyToClipboard()">Generate Prompt and Copy to Clipboard</button>  
     <div id="debug" style="margin-top: 20px; color: red;"></div>
   </body>
 </html>
@@ -62,14 +62,17 @@
   }
 
   document.getElementById('debug').innerHTML += '<br>BEGIN!';
-  
+
+  // getSelection() is reserved fn name!
   function getSelection2() {
-    document.getElementById('debug').innerHTML += '<br>getSelection called!';
     document.getElementById('debug').innerHTML += '<br>getSelection called';
     google.script.run
       .withSuccessHandler(function(text) {
         document.getElementById('debug').innerHTML += '<br>Success handler called with text: ' + text;
         document.getElementById('selected-text').innerHTML = text;
+        google.script.run.withSuccessHandler(function() {
+          document.getElementById('debug').innerHTML += '<br>Selection saved to global variable';
+        }).setGlobalSelection(text);
       })
       .withFailureHandler(function(error) {
         document.getElementById('debug').innerHTML += '<br>Error: ' + error;
