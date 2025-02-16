@@ -98,9 +98,6 @@ function convertBodyToMarkdown(body) {
       } else if (child.getType() === DocumentApp.ElementType.FOOTNOTE) {
         // Include footnote content in parentheses
         content += "(" + child.getFootnoteContents().getText() + ")";
-      } else {
-        // Ignore other child elements (images, page breaks, etc.)
-        continue;
       }
     }
 
@@ -181,12 +178,12 @@ function formatTextRun(textElem) {
 
 /**
  * Run tests for the markdown conversion logic.
+ * This test includes:
+ *  - A heading paragraph.
+ *  - A single bullet list item.
+ *  - An indented paragraph (blockquote).
  */
 function testMarkdownConversion() {
-  // Create a mock body with three children:
-  // 1. A heading paragraph.
-  // 2. A list item.
-  // 3. A paragraph with an indent (blockquote).
   const mockBody = {
     getNumChildren: function() { return 3; },
     getChild: function(i) {
@@ -203,7 +200,6 @@ function testMarkdownConversion() {
     }
   };
 
-  // Expected Markdown (note the blank lines between blocks)
   const expectedMarkdown =
     "# Heading One\n\n" +
     "- List item one\n\n" +
@@ -215,11 +211,52 @@ function testMarkdownConversion() {
   Logger.log("Output:\n" + output);
 
   if (output === expectedMarkdown) {
-    Logger.log("✅ Test Passed!");
+    Logger.log("✅ Basic Markdown conversion test passed!");
   } else {
-    Logger.log("❌ Test Failed!");
+    Logger.log("❌ Basic Markdown conversion test failed!");
   }
 }
+
+/**
+ * Run tests for three levels of bullet list items.
+ */
+function testThreeLevelBullets() {
+  const mockBody = {
+    getNumChildren: function() { return 3; },
+    getChild: function(i) {
+      if (i === 0) {
+        // Level 0 bullet
+        return new MockListItem("Level 0 bullet", 0, DocumentApp.GlyphType.BULLET, "listA");
+      } else if (i === 1) {
+        // Level 1 bullet
+        return new MockListItem("Level 1 bullet", 1, DocumentApp.GlyphType.BULLET, "listA");
+      } else if (i === 2) {
+        // Level 2 bullet
+        return new MockListItem("Level 2 bullet", 2, DocumentApp.GlyphType.BULLET, "listA");
+      }
+    }
+  };
+
+  const expectedMarkdown = 
+    "- Level 0 bullet\n" +
+    "  - Level 1 bullet\n" +
+    "    - Level 2 bullet";
+
+  const output = convertBodyToMarkdown(mockBody);
+  
+  Logger.log("Expected (3-level bullets):\n" + expectedMarkdown);
+  Logger.log("Output (3-level bullets):\n" + output);
+
+  if (output === expectedMarkdown) {
+    Logger.log("✅ 3-level bullet test passed!");
+  } else {
+    Logger.log("❌ 3-level bullet test failed!");
+  }
+}
+
+/* ================================
+   Mock Classes for Testing
+   ================================ */
 
 /**
  * Mock implementation for a Paragraph element.
@@ -326,3 +363,12 @@ MockText.prototype.isBold = function(index) { return false; };
 MockText.prototype.isItalic = function(index) { return false; };
 MockText.prototype.isUnderline = function(index) { return false; };
 MockText.prototype.getLinkUrl = function(index) { return null; };
+
+function testRetrieveDocMarkdown() {
+  var docId_part01 = "1Kk4ryuJicTOteqJ4IP9IfocQyTnZ6TIkTQviupB91c4";
+  var docId_part2 = "15e3EIbRqtJOZWUtPwTZG9zjTpoCQ5b1VFtNl8KZS_Lo";
+  var docId = docId_part01;
+  var markdown = exportDocToMarkdown(docId);
+  Logger.log("Markdown for doc id " + docId + ":\n" + markdown);
+  return markdown;
+}
