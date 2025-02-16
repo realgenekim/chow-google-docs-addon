@@ -67,18 +67,41 @@ function getSelectedText() {
 }
 
 
+let globalContentBook = "";  // Declare global variable
+
 function getDoc() {
-  try {
-    const doc = DocumentApp.openById('15e3EIbRqtJOZWUtPwTZG9zjTpoCQ5b1VFtNl8KZS_Lo');
-    const body = doc.getBody();
-    return body.getText();
-  } catch (error) {
-    Logger.log('Error in getDoc: ' + error);
-    return 'Error reading document: ' + error.toString();
-  }
+  // Store markdown content in global variable for later use
+  globalContentBook = fetchBookManuscriptMarkdown();
+  return globalContentBook;
 }
 
-function testgetDoc() {
-  // Logger.log(getDoc())
-  Logger.log("TEST")
+
+/**
+ * Fetches and combines markdown from two specific document parts.
+ * @return {string} Combined markdown text from both documents.
+ */
+function fetchBookManuscriptMarkdown() {
+  const docId_part01 = "1Kk4ryuJicTOteqJ4IP9IfocQyTnZ6TIkTQviupB91c4";
+  const docId_part2 = "15e3EIbRqtJOZWUtPwTZG9zjTpoCQ5b1VFtNl8KZS_Lo";
+  
+  try {
+    // Get markdown for both parts
+    const part1Markdown = exportDocToMarkdown(docId_part01);
+    const part2Markdown = exportDocToMarkdown(docId_part2);
+    
+    // Combine with a section divider
+    const combinedMarkdown = 
+      "# Part 1\n\n" +
+      part1Markdown + 
+      "\n\n---\n\n" + 
+      "# Part 2\n\n" +
+      part2Markdown;
+    
+    Logger.log("Combined manuscript markdown generated successfully");
+    return combinedMarkdown;
+    
+  } catch (error) {
+    Logger.log('Error in fetchBookManuscriptMarkdown: ' + error);
+    return 'Error generating combined markdown: ' + error.toString();
+  }
 }
