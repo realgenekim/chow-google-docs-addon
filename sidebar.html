@@ -1,10 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <script>
-      
-     
-    </script>
+    <base target="_top">
     <style>
       .content-box {
         margin-bottom: 15px;
@@ -31,9 +28,9 @@
     </style>
   </head>
   <body>
-    <h3>CHOW Workbench 2</h3>
+    <h3>CHOW Workbench 3</h3>
     <p>Written to make it easier to CHOW: assemble and sling prompts around to paste them into an LLM.</p>
-        <br>
+    <br>
         
     <div class="content-box">
       <h4>Selected Text</h4>
@@ -42,7 +39,9 @@
 
     <div class="content-box">
       <h4>Manuscript Context</h4>
-      <div id="manuscript-context" class="output-panel">Manuscript not loaded: click "Get Document" to load</div>
+      <div id="manuscript-context" class="output-panel">
+        Manuscript not loaded: click "Get Document" to load
+      </div>
     </div>
 
     <br>
@@ -52,58 +51,60 @@
     <button onclick="getSelection2()">Get Selection</button>
     <button onclick="copyToClipboard()">Generate Prompt and Copy to Clipboard</button>  
     <div id="debug" style="margin-top: 20px; color: red;"></div>
+
+    <script>
+      document.getElementById('debug').innerHTML += '<br>BEGIN!';
+
+      function getSelection2() {
+        document.getElementById('debug').innerHTML += '<br>getSelection called';
+        google.script.run
+          .withSuccessHandler(function(text) {
+            document.getElementById('debug').innerHTML += '<br>Success handler called with text: ' + text;
+            document.getElementById('selected-text').innerHTML = text;
+            google.script.run.withSuccessHandler(function() {
+              document.getElementById('debug').innerHTML += '<br>Selection saved to global variable';
+            }).setGlobalSelection(text);
+          })
+          .withFailureHandler(function(error) {
+            document.getElementById('debug').innerHTML += '<br>Error: ' + error;
+          })
+          .getSelectedText();
+      }
+
+      function getDoc() {
+        document.getElementById('debug').innerHTML += '<br>getDoc called!';
+        google.script.run
+          .withSuccessHandler(function(content) {
+            const wordCount = content.trim().split(/\s+/).length;
+            document.getElementById('manuscript-context').innerHTML = `Word count: ${wordCount}`;
+          })
+          .withFailureHandler(function(error) {
+            document.getElementById('debug').innerHTML += '<br>Error: ' + error;
+          })
+          .getDoc();
+        document.getElementById('debug').innerHTML += '<br>getDoc returned (takes about 10s to finish loading)!';
+      }
+
+      function reloadSidebar() {
+        // Call the server function to reload the sidebar.
+        google.script.run
+          .withSuccessHandler(() => {
+            console.log('Sidebar reloaded successfully.');
+          })
+          .withFailureHandler((error) => {
+            console.error('Error reloading sidebar: ', error);
+          })
+          .showSidebar();
+      }
+
+      async function copyToClipboard() {
+        try {
+          await navigator.clipboard.writeText('abc');
+          document.getElementById('debug').innerHTML += '<br>Copied to clipboard!';
+        } catch (err) {
+          document.getElementById('debug').innerHTML += '<br>Failed to copy: ' + err;
+        }
+      }
+    </script>
   </body>
 </html>
-
-<script>
-  function onButtonClick() {
-    document.getElementById('debug').innerHTML += '<br>onButtonClick called!';
-    google.script.run.showAlert();
-  }
-
-  document.getElementById('debug').innerHTML += '<br>BEGIN!';
-
-  // getSelection() is reserved fn name!
-  function getSelection2() {
-    document.getElementById('debug').innerHTML += '<br>getSelection called';
-    google.script.run
-      .withSuccessHandler(function(text) {
-        document.getElementById('debug').innerHTML += '<br>Success handler called with text: ' + text;
-        document.getElementById('selected-text').innerHTML = text;
-        google.script.run.withSuccessHandler(function() {
-          document.getElementById('debug').innerHTML += '<br>Selection saved to global variable';
-        }).setGlobalSelection(text);
-      })
-      .withFailureHandler(function(error) {
-        document.getElementById('debug').innerHTML += '<br>Error: ' + error;
-      })
-      .getSelectedText();
-  }
-
-  function getDoc() {
-    document.getElementById('debug').innerHTML += '<br>getDoc called!';
-    google.script.run
-      .withSuccessHandler(function(content) {
-        const wordCount = content.trim().split(/\s+/).length;
-        document.getElementById('manuscript-context').innerHTML = `Word count: ${wordCount}`;
-      })
-      .withFailureHandler(function(error) {
-        document.getElementById('debug').innerHTML += '<br>Error: ' + error;
-      })
-      .getDoc();
-      document.getElementById('debug').innerHTML += '<br>getDoc returned (takes about 10s to finish loading)!';
-  }
-  function reloadSidebar() {
-    // Call showSidebar() directly - no need to close first
-    google.script.run.showSidebar();
-  }
-
-  async function copyToClipboard() {
-    try {
-      await navigator.clipboard.writeText('abc');
-      document.getElementById('debug').innerHTML += '<br>Copied to clipboard!';
-    } catch (err) {
-      document.getElementById('debug').innerHTML += '<br>Failed to copy: ' + err;
-    }
-  }
-</script>
