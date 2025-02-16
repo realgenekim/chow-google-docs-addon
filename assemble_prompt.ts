@@ -40,9 +40,20 @@ function testAssemblePrompt(): void {
   Logger.log("Test result: " + JSON.stringify(result, null, 2));
   
   // Basic validation
-  console.assert(result.length === 4, "Expected 4 sections in the prompt");
-  console.assert(result[2]["manuscript-context"] === testManuscript, "Manuscript content mismatch");
-  console.assert(result[3]["section-to-be-worked-on"] === testSection, "Section content mismatch");
+  if (result.length !== 4) {
+    Logger.log("Error: Expected 4 sections in the prompt, got " + result.length);
+    return;
+  }
   
-  Logger.log("Test completed");
+  if (result[2]["manuscript-context"] !== testManuscript) {
+    Logger.log("Error: Manuscript content mismatch");
+    return;
+  }
+  
+  if (result[3]["section-to-be-worked-on"] !== testSection) {
+    Logger.log("Error: Section content mismatch");
+    return;
+  }
+  
+  Logger.log("Test completed successfully");
 }

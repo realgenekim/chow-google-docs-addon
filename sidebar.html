@@ -5,14 +5,45 @@
       
      
     </script>
+    <style>
+      .content-box {
+        margin-bottom: 15px;
+      }
+      .content-box h4 {
+        margin: 0;
+        color: #333;
+        font-size: 14px;
+      }
+      .output-panel {
+        margin-top: 10px;
+        white-space: pre-wrap;
+        border: 1px solid #e0e0e0;
+        padding: 12px;
+        border-radius: 4px;
+        background-color: #ffffff;
+        min-height: 50px;
+        color: #333;
+        cursor: default;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        user-select: text;
+        -webkit-user-select: text;
+      }
+    </style>
   </head>
   <body>
     <h3>CHOW Workbench</h3>
     <p>Written to make it easier to CHOW: assemble and sling prompts around to paste them into an LLM.</p>
         <br>
         
-    <div id="selected-text" style="margin-top: 10px; white-space: pre-wrap;"></div>
-    <div id="manuscript-context" style="margin-top: 10px; white-space: pre-wrap;">Manuscript not loaded: click "Get Document" to load</div>
+    <div class="content-box">
+      <h4>Selected Text</h4>
+      <div id="selected-text" class="output-panel"></div>
+    </div>
+
+    <div class="content-box">
+      <h4>Manuscript Context</h4>
+      <div id="manuscript-context" class="output-panel">Manuscript not loaded: click "Get Document" to load</div>
+    </div>
 
     <br>
 
