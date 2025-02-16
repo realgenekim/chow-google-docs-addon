@@ -45,12 +45,14 @@
     document.getElementById('debug').innerHTML += '<br>getDoc called!';
     google.script.run
       .withSuccessHandler(function(content) {
-        document.getElementById('selected-text').innerHTML = content;
+        const wordCount = content.trim().split(/\s+/).length;
+        document.getElementById('selected-text').innerHTML = `Word count: ${wordCount}`;
       })
       .withFailureHandler(function(error) {
         document.getElementById('debug').innerHTML += '<br>Error: ' + error;
       })
       .getDoc();
+      document.getElementById('debug').innerHTML += '<br>getDoc returned!';
   }
   function reloadSidebar() {
     google.script.run.triggerSidebarReload();  // Calls the function in Apps Script
