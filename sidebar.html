@@ -7,13 +7,12 @@
     </script>
   </head>
   <body>
-    <h3>Welcome to My Add-on</h3>
-    <p>This is a sidebar with a button. 33445533</p>
-    <button onclick="onButtonClick()">Click Me</button>
-    <br><br>
+    <h3>CHOW Workbench</h3>
+    <p>Written to make it easier to CHOW: assemble and sling prompts around to paste them into an LLM.</p>
+        <br><br>
     <button onclick="reloadSidebar()">Reload Sidebar</button>
     <button onclick="getSelection2()">Get Selection</button>
-    <button onclick="getDoc()">Read Doc</button>
+    <button onclick="getDoc()">Read Source Docs</button>
     <button onclick="copyToClipboard()">Copy to Clipboard</button>
     <div id="selected-text" style="margin-top: 10px; white-space: pre-wrap;"></div>
     <div id="debug" style="margin-top: 20px; color: red;"></div>
@@ -54,8 +53,9 @@
       .getDoc();
   }
   function reloadSidebar() {
-      location.reload();  // Reloads the sidebar without closing it
-    }
+    google.script.run.triggerSidebarReload();  // Calls the function in Apps Script
+    google.script.host.close();  // Closes the sidebar
+  }
 
   async function copyToClipboard() {
     try {
