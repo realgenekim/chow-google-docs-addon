@@ -23,13 +23,26 @@ Enclosed in this prompt is "mansuscript-context" which contains the full manscri
 
 Please critique this portion, included as as "section-to-be-worked-on".`;
 
-function assemblePrompt(manuscript: string): string {
-  const promptStructure: PromptSection[] = [
+function assemblePrompt(manuscript: string, currentSection: string): PromptSection[] {
+  return [
     { "project-goals": PROJECT_GOALS_TEXT },
     { "your-task": YOUR_TASK_TEXT },
     { "manuscript-context": manuscript },
-    { "section-to-be-worked-on": "" }
+    { "section-to-be-worked-on": currentSection }
   ];
+}
+
+function testAssemblePrompt(): void {
+  const testManuscript = "manuscript";
+  const testSection = "section to be worked on";
   
-  return JSON.stringify(promptStructure, null, 2);
+  const result = assemblePrompt(testManuscript, testSection);
+  Logger.log("Test result: " + JSON.stringify(result, null, 2));
+  
+  // Basic validation
+  console.assert(result.length === 4, "Expected 4 sections in the prompt");
+  console.assert(result[2]["manuscript-context"] === testManuscript, "Manuscript content mismatch");
+  console.assert(result[3]["section-to-be-worked-on"] === testSection, "Section content mismatch");
+  
+  Logger.log("Test completed");
 }
