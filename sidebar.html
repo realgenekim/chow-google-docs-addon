@@ -55,6 +55,17 @@
     <script>
       document.getElementById('debug').innerHTML += '<br>BEGIN!';
 
+      // Run these functions when the sidebar loads
+      window.onload = function() {
+        loadInitialState();
+      }
+
+      // execute this: populate initial state
+      function loadInitialState() {
+        getDoc();
+        getSelection2();
+      }
+
       function getSelection2() {
         document.getElementById('debug').innerHTML += '<br>getSelection called';
         google.script.run
