@@ -61,8 +61,9 @@ function getSelectedText() {
 }
 
 
-let globalContentBook = "";  // Declare global variable
-let globalSelection = ""
+// Initialize global variables from properties
+let globalContentBook = PropertiesService.getUserProperties().getProperty('globalContentBook') || "";
+let globalSelection = PropertiesService.getUserProperties().getProperty('globalSelection') || "";
 
 function generatePromptAndCopyToClipboard() {
   const prompt = assemblePrompt(globalContentBook, globalSelection);
@@ -72,6 +73,8 @@ function generatePromptAndCopyToClipboard() {
 function getDoc() {
   // Store markdown content in global variable for later use
   globalContentBook = fetchBookManuscriptMarkdown();
+  // Persist to properties
+  PropertiesService.getUserProperties().setProperty('globalContentBook', globalContentBook);
   return globalContentBook;
 }
 
@@ -108,4 +111,6 @@ function fetchBookManuscriptMarkdown() {
 
 function setGlobalSelection(text) {
   globalSelection = text;
+  // Persist to properties
+  PropertiesService.getUserProperties().setProperty('globalSelection', text);
 }

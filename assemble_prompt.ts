@@ -24,6 +24,9 @@ Enclosed in this prompt is "mansuscript-context" which contains the full manscri
 Please critique this portion, included as as "section-to-be-worked-on".`;
 
 function assemblePrompt(manuscript: string, currentSection: string): PromptSection[] {
+  console.log('manuscript (first 250 chars):', manuscript.substring(0, 250));
+  console.log('currentSection (first 250 chars):', currentSection.substring(0, 250));
+  
   return [
     { "project-goals": PROJECT_GOALS_TEXT },
     { "your-task": YOUR_TASK_TEXT },
