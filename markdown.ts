@@ -1,6 +1,28 @@
-function exportDocToMarkdown() {
-  const doc = DocumentApp.getActiveDocument();
-  const body = doc.getBody();
+/**
+ * Exports a Google Doc to Markdown.
+ * @param {string} docId - The ID of the Google Doc.
+ * @return {string} The converted Markdown text.
+ */
+function exportDocToMarkdown(docId) {
+  try {
+    const doc = DocumentApp.openById(docId);
+    const body = doc.getBody();
+    const markdownText = convertBodyToMarkdown(body);
+    Logger.log(markdownText);
+    return markdownText;
+  } catch (error) {
+    Logger.log('Error in exportDocToMarkdown: ' + error);
+    return 'Error: ' + error.toString();
+  }
+}
+
+/**
+ * Converts a Document body to Markdown.
+ * This function contains all the conversion logic so that it can be unit tested independently.
+ * @param {Object} body - A Document body (or a mock) that supports getNumChildren() and getChild().
+ * @return {string} The converted Markdown text.
+ */
+function convertBodyToMarkdown(body) {
   const numChildren = body.getNumChildren();
   let markdownText = "";
   // Track numbering for ordered lists by list ID and nesting level
@@ -35,7 +57,7 @@ function exportDocToMarkdown() {
         // Not a heading: check for indent to format as blockquote
         const indent = paragraph.getIndentStart();
         if (indent && indent > 0) {
-          // Determine blockquote level (approximately 1 '>' per 0.5 inch indent)
+          // Determine blockquote level (approximately 1 '>' per 36 points of indent)
           const level = Math.max(1, Math.floor(indent / 36));
           prefix = ">".repeat(level) + " ";
         }
@@ -49,8 +71,11 @@ function exportDocToMarkdown() {
       prefix = "  ".repeat(nesting);
       // Determine list marker (bullet or number)
       const glyphType = listItem.getGlyphType();
-      if (glyphType === DocumentApp.GlyphType.BULLET || glyphType === DocumentApp.GlyphType.HOLLOW_BULLET 
-          || glyphType === DocumentApp.GlyphType.SQUARE_BULLET) {
+      if (
+        glyphType === DocumentApp.GlyphType.BULLET ||
+        glyphType === DocumentApp.GlyphType.HOLLOW_BULLET ||
+        glyphType === DocumentApp.GlyphType.SQUARE_BULLET
+      ) {
         // Bullet list item
         prefix += "- ";
       } else {
@@ -96,12 +121,15 @@ function exportDocToMarkdown() {
     }
   }
 
-  Logger.log(markdownText);
-  // You can also return markdownText or output it (e.g., email it or insert into a document) as needed.
+  return markdownText.trim();
 }
 
+/**
+ * Formats a Text element into Markdown, preserving inline styles (bold, italic, underline, hyperlinks).
+ * @param {Object} textElem - A Text element (or a mock) with the appropriate methods.
+ * @return {string} The formatted Markdown string for the text element.
+ */
 function formatTextRun(textElem) {
-  // Convert a Text element to Markdown, preserving bold, italic, underline, and hyperlinks
   let mdText = "";
   const text = textElem.getText();
   const indices = textElem.getTextAttributeIndices();
@@ -118,59 +146,183 @@ function formatTextRun(textElem) {
 
     // Apply markdown/HTML based on styles
     if (linkUrl) {
-      // Format as a hyperlink
-      if (underline && (bold || italic)) {
-        // If underlined plus other styles, use HTML tags to combine (to avoid markdown parsing issues)
-        if (bold && italic) {
-          substring = "<u><strong><em>" + substring + "</em></strong></u>";
-        } else if (bold) {
-          substring = "<u><strong>" + substring + "</strong></u>";
-        } else if (italic) {
-          substring = "<u><em>" + substring + "</em></u>";
-        } else {
-          substring = "<u>" + substring + "</u>";
-        }
-      } else {
-        // Use Markdown for bold/italic if no underline or no combo
-        if (bold && italic) {
-          substring = "**_" + substring + "_**";
-        } else if (bold) {
-          substring = "**" + substring + "**";
-        } else if (italic) {
-          substring = "*" + substring + "*";
-        } else if (underline) {
-          substring = "<u>" + substring + "</u>";
-        }
+      // Format as a hyperlink. Prefer Markdown for bold/italic if possible.
+      if (bold && italic) {
+        substring = "**_" + substring + "_**";
+      } else if (bold) {
+        substring = "**" + substring + "**";
+      } else if (italic) {
+        substring = "*" + substring + "*";
       }
-      // Wrap the text in Markdown link syntax
+      if (underline) {
+        substring = "<u>" + substring + "</u>";
+      }
       substring = "[" + substring + "](" + linkUrl + ")";
     } else {
-      // Non-hyperlink text
-      if (underline && (bold || italic)) {
-        // Underlined + other style: use HTML to wrap the combination
-        if (bold && italic) {
-          substring = "<u><strong><em>" + substring + "</em></strong></u>";
-        } else if (bold) {
-          substring = "<u><strong>" + substring + "</strong></u>";
-        } else if (italic) {
-          substring = "<u><em>" + substring + "</em></u>";
-        } else {
-          substring = "<u>" + substring + "</u>";
-        }
-      } else {
-        // Use pure Markdown syntax for bold/italic when possible
-        if (bold && italic) {
-          substring = "**_" + substring + "_**";
-        } else if (bold) {
-          substring = "**" + substring + "**";
-        } else if (italic) {
-          substring = "*" + substring + "*";
-        } else if (underline) {
-          substring = "<u>" + substring + "</u>";
-        }
+      if (bold && italic) {
+        substring = "**_" + substring + "_**";
+      } else if (bold) {
+        substring = "**" + substring + "**";
+      } else if (italic) {
+        substring = "*" + substring + "*";
+      }
+      if (underline) {
+        substring = "<u>" + substring + "</u>";
       }
     }
     mdText += substring;
   }
   return mdText;
 }
+
+/* ================================
+   Test Code for Markdown Conversion
+   ================================ */
+
+/**
+ * Run tests for the markdown conversion logic.
+ */
+function testMarkdownConversion() {
+  // Create a mock body with three children:
+  // 1. A heading paragraph.
+  // 2. A list item.
+  // 3. A paragraph with an indent (blockquote).
+  const mockBody = {
+    getNumChildren: function() { return 3; },
+    getChild: function(i) {
+      if (i === 0) {
+        // Heading paragraph
+        return new MockParagraph("Heading One", DocumentApp.ParagraphHeading.HEADING1, 0);
+      } else if (i === 1) {
+        // List item (bullet)
+        return new MockListItem("List item one", 0, DocumentApp.GlyphType.BULLET, "list1");
+      } else if (i === 2) {
+        // Indented paragraph (blockquote)
+        return new MockParagraph("A blockquote", DocumentApp.ParagraphHeading.NORMAL, 40);
+      }
+    }
+  };
+
+  // Expected Markdown (note the blank lines between blocks)
+  const expectedMarkdown =
+    "# Heading One\n\n" +
+    "- List item one\n\n" +
+    "> A blockquote";
+
+  const output = convertBodyToMarkdown(mockBody);
+  
+  Logger.log("Expected:\n" + expectedMarkdown);
+  Logger.log("Output:\n" + output);
+
+  if (output === expectedMarkdown) {
+    Logger.log("✅ Test Passed!");
+  } else {
+    Logger.log("❌ Test Failed!");
+  }
+}
+
+/**
+ * Mock implementation for a Paragraph element.
+ * @param {string} text - The text content.
+ * @param {string} heading - The heading type (use DocumentApp.ParagraphHeading constants).
+ * @param {number} indentStart - The starting indent (in points).
+ */
+function MockParagraph(text, heading, indentStart) {
+  this._text = text;
+  this._heading = heading;
+  this._indentStart = indentStart;
+}
+
+MockParagraph.prototype.getType = function() {
+  return DocumentApp.ElementType.PARAGRAPH;
+};
+
+MockParagraph.prototype.getText = function() {
+  return this._text;
+};
+
+MockParagraph.prototype.getHeading = function() {
+  return this._heading;
+};
+
+MockParagraph.prototype.getIndentStart = function() {
+  return this._indentStart;
+};
+
+MockParagraph.prototype.getNumChildren = function() {
+  return 1;
+};
+
+MockParagraph.prototype.getChild = function(index) {
+  // For simplicity, always return a basic Text element.
+  return new MockText(this._text);
+};
+
+/**
+ * Mock implementation for a ListItem element.
+ * @param {string} text - The text content.
+ * @param {number} nestingLevel - The nesting level.
+ * @param {string} glyphType - The glyph type (use DocumentApp.GlyphType constants).
+ * @param {string} listId - An arbitrary ID to group list items.
+ */
+function MockListItem(text, nestingLevel, glyphType, listId) {
+  this._text = text;
+  this._nestingLevel = nestingLevel;
+  this._glyphType = glyphType;
+  this._listId = listId;
+}
+
+MockListItem.prototype.getType = function() {
+  return DocumentApp.ElementType.LIST_ITEM;
+};
+
+MockListItem.prototype.getText = function() {
+  return this._text;
+};
+
+MockListItem.prototype.getNestingLevel = function() {
+  return this._nestingLevel;
+};
+
+MockListItem.prototype.getGlyphType = function() {
+  return this._glyphType;
+};
+
+MockListItem.prototype.getListId = function() {
+  return this._listId;
+};
+
+MockListItem.prototype.getNumChildren = function() {
+  return 1;
+};
+
+MockListItem.prototype.getChild = function(index) {
+  return new MockText(this._text);
+};
+
+/**
+ * Mock implementation for a Text element.
+ * @param {string} text - The text content.
+ */
+function MockText(text) {
+  this._text = text;
+}
+
+MockText.prototype.getType = function() {
+  return DocumentApp.ElementType.TEXT;
+};
+
+MockText.prototype.getText = function() {
+  return this._text;
+};
+
+// For simplicity, assume the entire text has one style run.
+MockText.prototype.getTextAttributeIndices = function() {
+  return [0];
+};
+
+// Default styles: no bold, no italic, no underline, no link.
+MockText.prototype.isBold = function(index) { return false; };
+MockText.prototype.isItalic = function(index) { return false; };
+MockText.prototype.isUnderline = function(index) { return false; };
+MockText.prototype.getLinkUrl = function(index) { return null; };
