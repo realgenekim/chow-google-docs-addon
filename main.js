@@ -86,18 +86,56 @@ function getSelectedText() {
 }
 
 
+// Initialize global variables from properties
+let globalContentBook = PropertiesService.getUserProperties().getProperty('globalContentBook') || "";
+let globalSelection = PropertiesService.getUserProperties().getProperty('globalSelection') || "";
+
+function generatePromptAndCopyToClipboard() {
+  const prompt = assemblePrompt(globalContentBook, globalSelection);
+  return JSON.stringify(prompt, null, 2); // Returns formatted JSON string
+}
+
 function getDoc() {
+  // Store markdown content in global variable for later use
+  globalContentBook = fetchBookManuscriptMarkdown();
+  // Persist to properties
+  PropertiesService.getUserProperties().setProperty('globalContentBook', globalContentBook);
+  return globalContentBook;
+}
+
+
+/**
+ * Fetches and combines markdown from two specific document parts.
+ * @return {string} Combined markdown text from both documents.
+ */
+function fetchBookManuscriptMarkdown() {
+  const docId_part01 = "1Kk4ryuJicTOteqJ4IP9IfocQyTnZ6TIkTQviupB91c4";
+  const docId_part2 = "15e3EIbRqtJOZWUtPwTZG9zjTpoCQ5b1VFtNl8KZS_Lo";
+  
   try {
-    const doc = DocumentApp.openById('15e3EIbRqtJOZWUtPwTZG9zjTpoCQ5b1VFtNl8KZS_Lo');
-    const body = doc.getBody();
-    return body.getText();
+    // Get markdown for both parts
+    const part1Markdown = exportDocToMarkdown(docId_part01);
+    const part2Markdown = exportDocToMarkdown(docId_part2);
+    
+    // Combine with a section divider
+    const combinedMarkdown = 
+      "# Part 1\n\n" +
+      part1Markdown + 
+      "\n\n---\n\n" + 
+      "# Part 2\n\n" +
+      part2Markdown;
+    
+    Logger.log("Combined manuscript markdown generated successfully");
+    return combinedMarkdown;
+    
   } catch (error) {
-    Logger.log('Error in getDoc: ' + error);
-    return 'Error reading document: ' + error.toString();
+    Logger.log('Error in fetchBookManuscriptMarkdown: ' + error);
+    return 'Error generating combined markdown: ' + error.toString();
   }
 }
 
-function testgetDoc() {
-  // Logger.log(getDoc())
-  Logger.log("TEST")
+function setGlobalSelection(text) {
+  globalSelection = text;
+  // Persist to properties
+  PropertiesService.getUserProperties().setProperty('globalSelection', text);
 }
