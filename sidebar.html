@@ -78,7 +78,8 @@
         google.script.run
           .withSuccessHandler(function(text) {
             // Update the UI with selected text
-            document.getElementById('debug').innerHTML += '<br>Success handler called with text: ' + text;
+            const debugText = text.substring(0, 250) + (text.length > 250 ? '...' : '');
+            document.getElementById('debug').innerHTML += '<br>Success handler called with text: ' + debugText;
             
             // Calculate word count
             const wordCount = text.trim().split(/\s+/).length;
