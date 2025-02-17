@@ -79,7 +79,20 @@
           .withSuccessHandler(function(text) {
             // Update the UI with selected text
             document.getElementById('debug').innerHTML += '<br>Success handler called with text: ' + text;
-            document.getElementById('selected-text').innerHTML = text;
+            
+            // Calculate word count
+            const wordCount = text.trim().split(/\s+/).length;
+            
+            // Truncate to 250 characters
+            const truncatedText = text.substring(0, 250);
+            const hasMore = text.length > 250;
+            
+            // Display truncated text with word count and indication if truncated
+            document.getElementById('selected-text').innerHTML = 
+              truncatedText + 
+              (hasMore ? '...' : '') + 
+              `\n\n[${wordCount} words total]`;
+            
             // Save selection to global variable on server
             google.script.run
               .withSuccessHandler(function() {
