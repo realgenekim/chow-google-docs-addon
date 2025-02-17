@@ -1,12 +1,46 @@
-// function triggerSidebarReload() {
-//   Utilities.sleep(300);
-//   showSidebar();
-// }
+function myFunction() {
+  
+}
+
+function onHomepage(e) {
+  var card = CardService.newCardBuilder()
+    .setHeader(CardService.newCardHeader().setTitle("CHOW Assistnat"))
+    .addSection(
+      CardService.newCardSection()
+        .addWidget(
+          CardService.newTextParagraph().setText("Hello from CHOW Assistant!")
+        )
+    )
+    .build();
+  return card;
+}
+
+function onOpen(e) {
+  DocumentApp.getUi()
+    .createAddonMenu()  // Add-on menu in the Docs UI
+    .addItem("Do XYZ Task", "doXyzTask")
+    .addToUi();
+}
+function onInstall(e) {
+  onOpen(e);  // Ensure the menu is added when the add-on is installed
+}
+
+function triggerSidebarReload() {
+  // Wait a moment before reopening to ensure the sidebar has fully closed
+  Utilities.sleep(300);  // Small delay to prevent execution race conditions
+  showSidebar();  // Reopens the sidebar
+}
 
 function showSidebar() {
-  var html = HtmlService.createHtmlOutputFromFile('sidebar')
-      .setTitle("CHOW Workbench")
+
+  var timestamp = new Date().getTime(); // Cache-busting timestamp
+  var html = HtmlService.createHtmlOutputFromFile('Sidebar')
+      .setTitle("My Add-on")
       .setSandboxMode(HtmlService.SandboxMode.IFRAME);
+  
+  // Inject JavaScript to reload only if code has changed
+  html.append('<script>var cacheBuster = "' + timestamp + '";</script>');
+
   DocumentApp.getUi().showSidebar(html);
 }
 
@@ -24,18 +58,9 @@ function showAlert() {
   }
 }
 
-// this creates menu item
-function onOpen() {
-  DocumentApp.getUi().createMenu('Custom Add-on')
-      .addItem('Fetch Data', 'fetchData')
-      .addItem('Open Sidebar', 'showSidebar')
-      .addToUi();
-}
-
 function showSidebar() {
   var html = HtmlService.createHtmlOutputFromFile('sidebar')
-      .setTitle("CHOW Workbench")
-      .setSandboxMode(HtmlService.SandboxMode.IFRAME);
+      .setTitle("My Add-on");
   DocumentApp.getUi().showSidebar(html);
 }
 
@@ -61,56 +86,18 @@ function getSelectedText() {
 }
 
 
-// Initialize global variables from properties
-let globalContentBook = PropertiesService.getUserProperties().getProperty('globalContentBook') || "";
-let globalSelection = PropertiesService.getUserProperties().getProperty('globalSelection') || "";
-
-function generatePromptAndCopyToClipboard() {
-  const prompt = assemblePrompt(globalContentBook, globalSelection);
-  return JSON.stringify(prompt, null, 2); // Returns formatted JSON string
-}
-
 function getDoc() {
-  // Store markdown content in global variable for later use
-  globalContentBook = fetchBookManuscriptMarkdown();
-  // Persist to properties
-  PropertiesService.getUserProperties().setProperty('globalContentBook', globalContentBook);
-  return globalContentBook;
-}
-
-
-/**
- * Fetches and combines markdown from two specific document parts.
- * @return {string} Combined markdown text from both documents.
- */
-function fetchBookManuscriptMarkdown() {
-  const docId_part01 = "1Kk4ryuJicTOteqJ4IP9IfocQyTnZ6TIkTQviupB91c4";
-  const docId_part2 = "15e3EIbRqtJOZWUtPwTZG9zjTpoCQ5b1VFtNl8KZS_Lo";
-  
   try {
-    // Get markdown for both parts
-    const part1Markdown = exportDocToMarkdown(docId_part01);
-    const part2Markdown = exportDocToMarkdown(docId_part2);
-    
-    // Combine with a section divider
-    const combinedMarkdown = 
-      "# Part 1\n\n" +
-      part1Markdown + 
-      "\n\n---\n\n" + 
-      "# Part 2\n\n" +
-      part2Markdown;
-    
-    Logger.log("Combined manuscript markdown generated successfully");
-    return combinedMarkdown;
-    
+    const doc = DocumentApp.openById('15e3EIbRqtJOZWUtPwTZG9zjTpoCQ5b1VFtNl8KZS_Lo');
+    const body = doc.getBody();
+    return body.getText();
   } catch (error) {
-    Logger.log('Error in fetchBookManuscriptMarkdown: ' + error);
-    return 'Error generating combined markdown: ' + error.toString();
+    Logger.log('Error in getDoc: ' + error);
+    return 'Error reading document: ' + error.toString();
   }
 }
 
-function setGlobalSelection(text) {
-  globalSelection = text;
-  // Persist to properties
-  PropertiesService.getUserProperties().setProperty('globalSelection', text);
+function testgetDoc() {
+  // Logger.log(getDoc())
+  Logger.log("TEST")
 }

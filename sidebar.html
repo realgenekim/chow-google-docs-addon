@@ -29,7 +29,7 @@
   </head>
   <body>
     <!-- Main title and description -->
-    <h3>CHOW Workbench 3</h3>
+    <h3>CHOW Workbench 5</h3>
     <p>Written to make it easier to CHOW: assemble and sling prompts around to paste them into an LLM.</p>
     <br>
         
@@ -123,6 +123,7 @@
 
       // Generate prompt and copy to clipboard
       function generatePromptAndCopyToClipboard() {
+        document.getElementById('debug').innerHTML += '<br>generatePromptAndCopyToClipboard called!';
         google.script.run
           .withSuccessHandler(function(promptText) {
             try {
