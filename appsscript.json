@@ -12,7 +12,7 @@
   "addOns": {
     "common": {
       "name": "CHOW Assistant",
-      "logoUrl": "https://fonts.gstatic.com/s/i/materialicons/edit/v6/24px.svg",
+      "logoUrl": "https://www.gstatic.com/images/icons/material/system/1x/edit_black_48dp.png",
       "useLocaleFromApp": true
     },
     "docs": {
