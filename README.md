@@ -3,6 +3,6 @@ Install:
 - npm install -g @google/clasp
 - clasp login
 
-Turn API Access On: 
-
+- go to https://script.google.com/home/usersettings 
+  and enable Script API access
 - clasp create --title "CHOW" --type standalone
