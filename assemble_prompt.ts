@@ -21,7 +21,8 @@ const YOUR_TASK_TEXT = `Study this text.  It's  more difficult to read than i wa
 
 Enclosed in this prompt is "mansuscript-context" which contains the full manscript.  I love Part 1 — the tone, style, inviting nature.
 
-Please critique this portion, included as as "section-to-be-worked-on".`;
+Please critique this portion, included as as "section-to-be-worked-on".
+Then make your revisions and put them into an artifact in the artifacts window.`;
 
 function assemblePrompt(manuscript: string, currentSection: string): PromptSection[] {
   console.log('manuscript (first 250 chars):', manuscript.substring(0, 250));
