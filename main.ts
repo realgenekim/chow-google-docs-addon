@@ -113,10 +113,15 @@ function fetchBookManuscriptMarkdown() {
   const docId_part2 = "15e3EIbRqtJOZWUtPwTZG9zjTpoCQ5b1VFtNl8KZS_Lo";
   
   try {
-    // Get markdown for both parts
-    const part1Markdown = exportDocToMarkdown(docId_part01);
-    const part2Markdown = exportDocToMarkdown(docId_part2);
-    
+    // Get markdown for both parts with retry logic
+    const part1Markdown = retryOperation(() => exportDocToMarkdown(docId_part01), 3);
+    const part2Markdown = retryOperation(() => exportDocToMarkdown(docId_part2), 3);
+
+    // log the word count of the two vars
+    const getWordCount = (text: string): number => text.trim().split(/\s+/).length;
+    Logger.log(`Part 1 word count: ${getWordCount(part1Markdown)}`);
+    Logger.log(`Part 2 word count: ${getWordCount(part2Markdown)}`);
+
     // Combine with a section divider
     const combinedMarkdown = 
       "# Part 1\n\n" +
@@ -138,4 +143,34 @@ function setGlobalSelection(text) {
   globalSelection = text;
   // Persist to properties
   PropertiesService.getUserProperties().setProperty('globalSelection', text);
+}
+
+/**
+ * Retries an operation with exponential backoff.
+ * @param {Function} operation - The operation to retry
+ * @param {number} maxAttempts - Maximum number of retry attempts
+ * @param {number} initialDelay - Initial delay in milliseconds (default: 1000)
+ * @return {any} The result of the successful operation
+ * @throws {Error} If all retry attempts fail
+ */
+function retryOperation(operation: () => any, maxAttempts: number, initialDelay: number = 1000): any {
+  let lastError: Error;
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return operation();
+    } catch (error) {
+      lastError = error;
+      if (attempt === maxAttempts) {
+        throw new Error(`Failed after ${maxAttempts} attempts. Last error: ${error}`);
+      }
+      
+      // Calculate delay with exponential backoff (1s, 2s, 4s, etc.)
+      const delay = initialDelay * Math.pow(2, attempt - 1);
+      Logger.log(`Attempt ${attempt} failed. Retrying in ${delay}ms...`);
+      Utilities.sleep(delay);
+    }
+  }
+  
+  throw lastError;
 }

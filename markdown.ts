@@ -6,14 +6,40 @@
 function exportDocToMarkdown(docId) {
   try {
     const doc = DocumentApp.openById(docId);
+    if (!doc) {
+      Logger.log('Error: Could not open document with ID: ' + docId);
+      return 'Error: Document not found';
+    }
+    
     const body = doc.getBody();
+    if (!body) {
+      Logger.log('Error: Document body is null');
+      return 'Error: Document body not found';
+    }
+    
     const markdownText = convertBodyToMarkdown(body);
-    Logger.log(markdownText);
+    if (!markdownText && markdownText !== '') {
+      Logger.log('Warning: convertBodyToMarkdown returned null');
+      return '';
+    }
+    
+    // Add additional null checks for document elements
+    if (!doc.getBody() || !doc.getBody().getText()) {
+      Logger.log('Error: Document body or text is null');
+      return 'Error: Empty document';
+    }
+    
+    Logger.log('Successfully converted document to markdown');
     return markdownText;
   } catch (error) {
     Logger.log('Error in exportDocToMarkdown: ' + error);
     return 'Error: ' + error.toString();
   }
+}
+
+function testExportMarkdown()
+{
+  exportDocToMarkdown("15e3EIbRqtJOZWUtPwTZG9zjTpoCQ5b1VFtNl8KZS_Lo")
 }
 
 /**
@@ -23,13 +49,28 @@ function exportDocToMarkdown(docId) {
  * @return {string} The converted Markdown text.
  */
 function convertBodyToMarkdown(body) {
+  // Add null check at the start
+  if (!body) {
+    Logger.log('Error: body parameter is null or undefined');
+    return '';  // Return empty string instead of null
+  }
+
   const numChildren = body.getNumChildren();
+  if (typeof numChildren !== 'number') {
+    Logger.log('Error: body.getNumChildren() returned invalid value');
+    return '';  // Return empty string instead of null
+  }
+
   let markdownText = "";
   // Track numbering for ordered lists by list ID and nesting level
   const listCounters = {};
 
   for (let i = 0; i < numChildren; i++) {
     const element = body.getChild(i);
+    if (!element) {
+      Logger.log(`Warning: Null element at index ${i}`);
+      continue;
+    }
     const type = element.getType();
     let prefix = "";
     let content = "";
@@ -38,7 +79,9 @@ function convertBodyToMarkdown(body) {
     if (type === DocumentApp.ElementType.PARAGRAPH) {
       const paragraph = element;
       // Skip table of contents or empty paragraphs
-      if (paragraph.getType() === DocumentApp.ElementType.TABLE_OF_CONTENTS || paragraph.getText().trim() === "") {
+      if (paragraph.getType() === DocumentApp.ElementType.TABLE_OF_CONTENTS || 
+          !paragraph.getText || // Check if getText method exists
+          (typeof paragraph.getText === 'function' && paragraph.getText().trim() === "")) {
         continue;
       }
       // Determine heading level
@@ -97,7 +140,16 @@ function convertBodyToMarkdown(body) {
         content += formatTextRun(child);
       } else if (child.getType() === DocumentApp.ElementType.FOOTNOTE) {
         // Include footnote content in parentheses
-        content += "(" + child.getFootnoteContents().getText() + ")";
+        if (child && child.getFootnoteContents && typeof child.getFootnoteContents === 'function') {
+          const footnoteContents = child.getFootnoteContents();
+          if (footnoteContents && footnoteContents.getText && typeof footnoteContents.getText === 'function') {
+            content += "(" + footnoteContents.getText() + ")";
+          } else {
+            Logger.log('Warning: Invalid footnote contents structure');
+          }
+        } else {
+          Logger.log('Warning: Invalid footnote element structure');
+        }
       }
     }
 
