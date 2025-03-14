@@ -14,6 +14,24 @@ clasp login
 clasp create --title "CHOW" --type standalone
 ```
 
+## Running
+
+After installation, you can deploy your changes to Google Apps Script:
+
+```
+# Push changes once
+clasp push
+
+# Automatically push changes when files are modified
+make clasp-watch
+# or directly: clasp push --watch
+```
+
+- `clasp push` uploads your latest code changes to Google Apps Script
+- `make clasp-watch` starts a file watcher that automatically pushes changes whenever files are modified, ideal for development
+
+Your changes will be available in the Google Apps Script editor after pushing.
+
 ## Dev Notes
 
 This project was built with TypeScript and Google Apps Script in just three hours using "vibe engineering" techniques. The development process itself demonstrated how AI tools can help build functional products in unfamiliar languages and ecosystems.
