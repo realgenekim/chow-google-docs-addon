@@ -103,19 +103,38 @@ function getDoc() {
   return globalContentBook;
 }
 
+function getPart1Doc() {
+  // Store only Part 1 markdown content in global variable
+  globalContentBook = fetchBookPart1Markdown();
+  // Persist to properties
+  PropertiesService.getUserProperties().setProperty('globalContentBook', globalContentBook);
+  return globalContentBook;
+}
+
+function getPart2Doc() {
+  // Store only Part 2 markdown content in global variable
+  globalContentBook = fetchBookPart2Markdown();
+  // Persist to properties
+  PropertiesService.getUserProperties().setProperty('globalContentBook', globalContentBook);
+  return globalContentBook;
+}
+
+
+/**
+ * Document IDs for manuscript parts
+ */
+const DOC_ID_PART1 = "1Kk4ryuJicTOteqJ4IP9IfocQyTnZ6TIkTQviupB91c4";
+const DOC_ID_PART2 = "15e3EIbRqtJOZWUtPwTZG9zjTpoCQ5b1VFtNl8KZS_Lo";
 
 /**
  * Fetches and combines markdown from two specific document parts.
  * @return {string} Combined markdown text from both documents.
  */
 function fetchBookManuscriptMarkdown() {
-  const docId_part01 = "1Kk4ryuJicTOteqJ4IP9IfocQyTnZ6TIkTQviupB91c4";
-  const docId_part2 = "15e3EIbRqtJOZWUtPwTZG9zjTpoCQ5b1VFtNl8KZS_Lo";
-  
   try {
     // Get markdown for both parts with retry logic
-    const part1Markdown = retryOperation(() => exportDocToMarkdown(docId_part01), 3);
-    const part2Markdown = retryOperation(() => exportDocToMarkdown(docId_part2), 3);
+    const part1Markdown = retryOperation(() => exportDocToMarkdown(DOC_ID_PART1), 3);
+    const part2Markdown = retryOperation(() => exportDocToMarkdown(DOC_ID_PART2), 3);
 
     // log the word count of the two vars
     const getWordCount = (text: string): number => text.trim().split(/\s+/).length;
@@ -136,6 +155,54 @@ function fetchBookManuscriptMarkdown() {
   } catch (error) {
     Logger.log('Error in fetchBookManuscriptMarkdown: ' + error);
     return 'Error generating combined markdown: ' + error.toString();
+  }
+}
+
+/**
+ * Fetches only Part 1 markdown.
+ * @return {string} Markdown text from Part 1 document.
+ */
+function fetchBookPart1Markdown() {
+  try {
+    // Get markdown for Part 1 with retry logic
+    const part1Markdown = retryOperation(() => exportDocToMarkdown(DOC_ID_PART1), 3);
+    
+    // log the word count
+    const getWordCount = (text: string): number => text.trim().split(/\s+/).length;
+    Logger.log(`Part 1 word count: ${getWordCount(part1Markdown)}`);
+    
+    const formattedMarkdown = "# Part 1\n\n" + part1Markdown;
+    
+    Logger.log("Part 1 manuscript markdown generated successfully");
+    return formattedMarkdown;
+    
+  } catch (error) {
+    Logger.log('Error in fetchBookPart1Markdown: ' + error);
+    return 'Error generating Part 1 markdown: ' + error.toString();
+  }
+}
+
+/**
+ * Fetches only Part 2 markdown.
+ * @return {string} Markdown text from Part 2 document.
+ */
+function fetchBookPart2Markdown() {
+  try {
+    // Get markdown for Part 2 with retry logic
+    const part2Markdown = retryOperation(() => exportDocToMarkdown(DOC_ID_PART2), 3);
+    
+    // log the word count
+    const getWordCount = (text: string): number => text.trim().split(/\s+/).length;
+    Logger.log(`Part 2 word count: ${getWordCount(part2Markdown)}`);
+    
+    const formattedMarkdown = "# Part 2\n\n" + part2Markdown;
+    
+    Logger.log("Part 2 manuscript markdown generated successfully");
+    return formattedMarkdown;
+    
+  } catch (error) {
+    Logger.log('Error in fetchBookPart2Markdown: ' + error);
+    return 'Error generating Part 2 markdown: ' + error.toString();
   }
 }
 

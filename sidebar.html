@@ -53,7 +53,13 @@
     <button onclick="reloadSidebar()">Reload Sidebar</button>
     <button onclick="getDoc()">Read Source Docs</button>
     <button onclick="getSelection2()">Get Selection</button>
-    <button onclick="generatePromptAndCopyToClipboard()">Generate Prompt and Copy to Clipboard</button>  
+    <button onclick="generatePromptAndCopyToClipboard()">Generate Prompt and Copy to Clipboard</button>
+    
+    <!-- Part-specific buttons -->
+    <div style="margin-top: 10px;">
+      <button onclick="getPart1DocAndPrompt()">Part 1 Prompt to Clipboard</button>
+      <button onclick="getPart2DocAndPrompt()">Part 2 Prompt to Clipboard</button>
+    </div>
     <div id="debug" style="margin-top: 20px; color: red;"></div>
 
     <script>
@@ -161,6 +167,44 @@
             document.getElementById('debug').innerHTML += '<br>Error generating prompt: ' + error;
           })
           .generatePromptAndCopyToClipboard();
+      }
+      
+      // Get Part 1 document and generate prompt
+      function getPart1DocAndPrompt() {
+        document.getElementById('debug').innerHTML += '<br>Getting Part 1 document...';
+        google.script.run
+          .withSuccessHandler(function(content) {
+            // Calculate and display word count
+            var wordCount = content.trim().split(/\s+/).length;
+            document.getElementById('manuscript-context').innerHTML = 'Part 1 Word count: ' + wordCount;
+            document.getElementById('debug').innerHTML += '<br>Part 1 loaded, generating prompt...';
+            
+            // Now generate and copy the prompt
+            generatePromptAndCopyToClipboard();
+          })
+          .withFailureHandler(function(error) {
+            document.getElementById('debug').innerHTML += '<br>Error: ' + error;
+          })
+          .getPart1Doc();
+      }
+      
+      // Get Part 2 document and generate prompt
+      function getPart2DocAndPrompt() {
+        document.getElementById('debug').innerHTML += '<br>Getting Part 2 document...';
+        google.script.run
+          .withSuccessHandler(function(content) {
+            // Calculate and display word count
+            var wordCount = content.trim().split(/\s+/).length;
+            document.getElementById('manuscript-context').innerHTML = 'Part 2 Word count: ' + wordCount;
+            document.getElementById('debug').innerHTML += '<br>Part 2 loaded, generating prompt...';
+            
+            // Now generate and copy the prompt
+            generatePromptAndCopyToClipboard();
+          })
+          .withFailureHandler(function(error) {
+            document.getElementById('debug').innerHTML += '<br>Error: ' + error;
+          })
+          .getPart2Doc();
       }
     </script>
   </body>
