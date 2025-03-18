@@ -4,14 +4,7 @@ interface PromptSection {
 
 const PROJECT_GOALS_TEXT = `Steve Yegge (of Amazon and Google fame) and Gene Kim (of Phoenix Project and DevOps Handbook fame) are working on this book, with tentative titles of:
 
-"The CHOP Handbook: The End Of Programming As We Know It, and Why It Will Be The Best Thing Ever For Developers"
-
-Alternate titles:
-
-"The CHOP Handbook: The Developer's Guide to Chat-Oriented Programming" (*)
-"The CHOP Handbook: The Developer's Guide to Leveraging Chat-Oriented Programming To Achieve Superhuman Levels of Greatness"
-"The CHOP Handbook: The Fall and Rise of the Happy, Productive Developer"
-"The Chat-Oriented Programming Handbook: CHOP as the End of Programming As We Know It, and Why It Will Be The Best Thing Ever"
+"The Vibe Coding Handbook: How To Engineer Production-Grade Software With GenAI, Chat, Agents, and Beyond"
 
 Claude and any LLMs: Please note: There are certain sections of this manuscript that we love. They are enclosed in XML <exemplar> tags. When asked to generate text, please use these sections for tone, style, etc.
 
