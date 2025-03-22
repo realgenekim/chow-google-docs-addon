@@ -51,7 +51,7 @@
 
     <!-- Control buttons -->
     <button onclick="reloadSidebar()">Reload Sidebar</button>
-    <button onclick="getDoc()">Read Source Docs</button>
+    <button onclick="getDoc()">Reload Source Docs</button>
     <button onclick="getSelection2()">Get Selection</button>
     <button onclick="generatePromptAndCopyToClipboard()">Generate Prompt and Copy to Clipboard</button>
     
@@ -147,18 +147,19 @@
         google.script.run
           .withSuccessHandler(function(promptText) {
             try {
-              // Create temporary textarea element
-              var textArea = document.createElement('textarea');
-              textArea.value = promptText;
-              document.body.appendChild(textArea);
-              
-              // Select and copy text
-              textArea.select();
-              document.execCommand('copy');
-              
-              // Clean up and show success message
-              document.body.removeChild(textArea);
-              document.getElementById('debug').innerHTML += '<br>Prompt generated and copied to clipboard!';
+              // Use Navigator clipboard API which is more modern and reliable
+              if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(promptText)
+                  .then(() => {
+                    document.getElementById('debug').innerHTML += '<br>Prompt copied to clipboard using Navigator API!';
+                  })
+                  .catch(err => {
+                    document.getElementById('debug').innerHTML += '<br>Navigator clipboard API failed: ' + err;
+                    fallbackCopyToClipboard(promptText);
+                  });
+              } else {
+                fallbackCopyToClipboard(promptText);
+              }
             } catch (err) {
               document.getElementById('debug').innerHTML += '<br>Failed to copy: ' + err;
             }
@@ -167,6 +168,77 @@
             document.getElementById('debug').innerHTML += '<br>Error generating prompt: ' + error;
           })
           .generatePromptAndCopyToClipboard();
+      }
+      
+      // Fallback copy method using execCommand
+      function fallbackCopyToClipboard(text) {
+        try {
+          var textArea = document.createElement('textarea');
+          textArea.value = text;
+          
+          // Make the textarea out of viewport
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-999999px';
+          textArea.style.top = '-999999px';
+          document.body.appendChild(textArea);
+          
+          textArea.focus();
+          textArea.select();
+          
+          var successful = document.execCommand('copy');
+          document.body.removeChild(textArea);
+          
+          if (successful) {
+            document.getElementById('debug').innerHTML += '<br>Prompt copied to clipboard using fallback method!';
+          } else {
+            document.getElementById('debug').innerHTML += '<br>Fallback clipboard copy failed';
+            showCopyPrompt(text);
+          }
+        } catch (err) {
+          document.getElementById('debug').innerHTML += '<br>Fallback clipboard copy error: ' + err;
+          showCopyPrompt(text);
+        }
+      }
+      
+      // Last resort: show text for manual copy
+      function showCopyPrompt(text) {
+        // Create a modal or display area for the user to manually copy
+        var copyArea = document.createElement('div');
+        copyArea.style.position = 'fixed';
+        copyArea.style.left = '10%';
+        copyArea.style.top = '10%';
+        copyArea.style.width = '80%';
+        copyArea.style.height = '60%';
+        copyArea.style.backgroundColor = 'white';
+        copyArea.style.zIndex = '1000';
+        copyArea.style.padding = '20px';
+        copyArea.style.border = '1px solid black';
+        copyArea.style.overflow = 'auto';
+        
+        var closeButton = document.createElement('button');
+        closeButton.innerText = 'Close';
+        closeButton.onclick = function() {
+          document.body.removeChild(copyArea);
+        };
+        
+        var textDisplay = document.createElement('textarea');
+        textDisplay.value = text;
+        textDisplay.style.width = '100%';
+        textDisplay.style.height = '80%';
+        textDisplay.style.marginTop = '10px';
+        
+        copyArea.appendChild(document.createTextNode('Automatic copying failed. Please manually copy this text:'));
+        copyArea.appendChild(document.createElement('br'));
+        copyArea.appendChild(textDisplay);
+        copyArea.appendChild(document.createElement('br'));
+        copyArea.appendChild(closeButton);
+        
+        document.body.appendChild(copyArea);
+        
+        // Select all text for easy copying
+        textDisplay.select();
+        
+        document.getElementById('debug').innerHTML += '<br>Showing manual copy interface';
       }
       
       // Get Part 1 document and generate prompt
