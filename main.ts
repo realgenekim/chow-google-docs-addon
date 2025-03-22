@@ -122,19 +122,59 @@ function getDoc() {
 }
 
 function getPart1Doc() {
-  // Store only Part 1 markdown content in global variable
-  globalContentBook = fetchBookPart1Markdown();
-  // Persist to properties
-  PropertiesService.getUserProperties().setProperty('globalContentBook', globalContentBook);
-  return globalContentBook;
+  try {
+    // Store only Part 1 markdown content in global variable
+    globalContentBook = fetchBookPart1Markdown();
+    
+    // Check if the result indicates an access error
+    if (globalContentBook.startsWith('# Access Error') || 
+        globalContentBook.startsWith('# Error Accessing Document')) {
+      
+      Logger.log('Access error detected with Part 1 document');
+      
+      // Add fallback content for Part 1 so the prompt still works
+      globalContentBook = `# Part 1
+
+${globalContentBook}
+
+Note: Using placeholder content for Part 1. The actual document could not be accessed.`;
+    }
+    
+    // Persist to properties
+    PropertiesService.getUserProperties().setProperty('globalContentBook', globalContentBook);
+    return globalContentBook;
+  } catch (error) {
+    Logger.log('Error in getPart1Doc: ' + error);
+    return 'Error: ' + error.toString();
+  }
 }
 
 function getPart2Doc() {
-  // Store only Part 2 markdown content in global variable
-  globalContentBook = fetchBookPart2Markdown();
-  // Persist to properties
-  PropertiesService.getUserProperties().setProperty('globalContentBook', globalContentBook);
-  return globalContentBook;
+  try {
+    // Store only Part 2 markdown content in global variable
+    globalContentBook = fetchBookPart2Markdown();
+    
+    // Check if the result indicates an access error
+    if (globalContentBook.startsWith('# Access Error') || 
+        globalContentBook.startsWith('# Error Accessing Document')) {
+      
+      Logger.log('Access error detected with Part 2 document');
+      
+      // Add fallback content for Part 2 so the prompt still works
+      globalContentBook = `# Part 2
+
+${globalContentBook}
+
+Note: Using placeholder content for Part 2. The actual document could not be accessed.`;
+    }
+    
+    // Persist to properties
+    PropertiesService.getUserProperties().setProperty('globalContentBook', globalContentBook);
+    return globalContentBook;
+  } catch (error) {
+    Logger.log('Error in getPart2Doc: ' + error);
+    return 'Error: ' + error.toString();
+  }
 }
 
 
@@ -151,8 +191,20 @@ const DOC_ID_PART2 = "15e3EIbRqtJOZWUtPwTZG9zjTpoCQ5b1VFtNl8KZS_Lo";
 function fetchBookManuscriptMarkdown() {
   try {
     // Get markdown for both parts with retry logic
-    const part1Markdown = retryOperation(() => exportDocToMarkdown(DOC_ID_PART1), 3);
-    const part2Markdown = retryOperation(() => exportDocToMarkdown(DOC_ID_PART2), 3);
+    let part1Markdown = retryOperation(() => exportDocToMarkdown(DOC_ID_PART1), 3);
+    let part2Markdown = retryOperation(() => exportDocToMarkdown(DOC_ID_PART2), 3);
+    
+    // Check for access errors in Part 1
+    if (part1Markdown.startsWith('# Access Error') || part1Markdown.startsWith('# Error Accessing Document')) {
+      Logger.log('Access error detected with Part 1 document in combined fetch');
+      part1Markdown = part1Markdown + "\n\nNote: Using error message for Part 1. The actual document could not be accessed.";
+    }
+    
+    // Check for access errors in Part 2
+    if (part2Markdown.startsWith('# Access Error') || part2Markdown.startsWith('# Error Accessing Document')) {
+      Logger.log('Access error detected with Part 2 document in combined fetch');
+      part2Markdown = part2Markdown + "\n\nNote: Using error message for Part 2. The actual document could not be accessed.";
+    }
 
     // log the word count of the two vars
     const getWordCount = (text: string): number => text.trim().split(/\s+/).length;
@@ -172,7 +224,8 @@ function fetchBookManuscriptMarkdown() {
     
   } catch (error) {
     Logger.log('Error in fetchBookManuscriptMarkdown: ' + error);
-    return 'Error generating combined markdown: ' + error.toString();
+    return '# Error Generating Combined Markdown\n\n' + error.toString() + 
+      '\n\nPlease check that all documents exist and you have permission to access them.';
   }
 }
 

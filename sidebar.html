@@ -449,16 +449,41 @@
         logMessage('Getting Part 1 document... (takes about 15s)');
         google.script.run
           .withSuccessHandler(function(content) {
-            // Calculate and display word count
-            var wordCount = content.trim().split(/\s+/).length;
-            document.getElementById('manuscript-context').innerHTML = 'Part 1 Word count: ' + wordCount;
-            logMessage('Part 1 loaded, generating prompt...');
-            
-            // Now generate and copy the prompt
-            generatePromptAndCopyToClipboard();
+            // Check for access errors
+            if (content.includes('Access Error') || content.includes('Error Accessing Document')) {
+              logMessage('⚠️ Document access error detected');
+              
+              // Show warning message in the manuscript context area
+              document.getElementById('manuscript-context').innerHTML = 
+                '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
+                '<strong>⚠️ Document Access Error</strong><br><br>' +
+                'Could not access the Part 1 document. This document may not be shared with your Google account.<br><br>' +
+                '<strong>To fix this issue:</strong><br>' +
+                '1. Make sure you\'re logged in with the correct Google account<br>' +
+                '2. Ask the document owner to share it with your email address<br>' +
+                '3. Open the document directly in Google Docs first to accept any sharing invitations<br><br>' +
+                '<em>Note: The prompt will still be generated using placeholder text for Part 1.</em>' +
+                '</div>';
+                
+              // Continue with prompt generation despite error
+              logMessage('Continuing with prompt generation using placeholder content...');
+              generatePromptAndCopyToClipboard();
+            } else {
+              // Normal flow - no errors
+              var wordCount = content.trim().split(/\s+/).length;
+              document.getElementById('manuscript-context').innerHTML = 'Part 1 Word count: ' + wordCount;
+              logMessage('Part 1 loaded, generating prompt...');
+              
+              // Generate and copy the prompt
+              generatePromptAndCopyToClipboard();
+            }
           })
           .withFailureHandler(function(error) {
             logMessage('Error: ' + error);
+            // Show error message
+            document.getElementById('manuscript-context').innerHTML = 
+              '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
+              '<strong>⚠️ Error</strong><br><br>' + error + '</div>';
           })
           .getPart1Doc();
       }
@@ -468,16 +493,41 @@
         logMessage('Getting Part 2 document... (takes about 15s)');
         google.script.run
           .withSuccessHandler(function(content) {
-            // Calculate and display word count
-            var wordCount = content.trim().split(/\s+/).length;
-            document.getElementById('manuscript-context').innerHTML = 'Part 2 Word count: ' + wordCount;
-            logMessage('Part 2 loaded, generating prompt...');
-            
-            // Now generate and copy the prompt
-            generatePromptAndCopyToClipboard();
+            // Check for access errors
+            if (content.includes('Access Error') || content.includes('Error Accessing Document')) {
+              logMessage('⚠️ Document access error detected');
+              
+              // Show warning message in the manuscript context area
+              document.getElementById('manuscript-context').innerHTML = 
+                '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
+                '<strong>⚠️ Document Access Error</strong><br><br>' +
+                'Could not access the Part 2 document. This document may not be shared with your Google account.<br><br>' +
+                '<strong>To fix this issue:</strong><br>' +
+                '1. Make sure you\'re logged in with the correct Google account<br>' +
+                '2. Ask the document owner to share it with your email address<br>' +
+                '3. Open the document directly in Google Docs first to accept any sharing invitations<br><br>' +
+                '<em>Note: The prompt will still be generated using the Part 1 summary and placeholder text for Part 2.</em>' +
+                '</div>';
+                
+              // Continue with prompt generation despite error
+              logMessage('Continuing with prompt generation using placeholder content...');
+              generatePromptAndCopyToClipboard();
+            } else {
+              // Normal flow - no errors
+              var wordCount = content.trim().split(/\s+/).length;
+              document.getElementById('manuscript-context').innerHTML = 'Part 2 Word count: ' + wordCount;
+              logMessage('Part 2 loaded, generating prompt...');
+              
+              // Generate and copy the prompt
+              generatePromptAndCopyToClipboard();
+            }
           })
           .withFailureHandler(function(error) {
             logMessage('Error: ' + error);
+            // Show error message
+            document.getElementById('manuscript-context').innerHTML = 
+              '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
+              '<strong>⚠️ Error</strong><br><br>' + error + '</div>';
           })
           .getPart2Doc();
       }
