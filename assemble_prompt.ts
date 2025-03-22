@@ -74,6 +74,117 @@ First, vibe coding helps you write code faster. Tasks that once took days can of
 Please use this framework and style guidance to inform the practical "how-to" focus of Part 2, ensuring consistency with Part 1 while avoiding unnecessary repetition of background material.
 `
 
+const PART2_SUMMARY =
+`
+
+# Essential Framework of "The Vibe Coding Handbook" Part 2: The How of Vibe Coding
+
+## Structure and Progression
+
+Part 2 shifts from the "why" of vibe coding to the practical "how," presenting a journey through implementation that follows a natural progression:
+
+The authors first address the **dramatic shift in mindset** required to make the leap from manual coding to vibe coding. They emphasize that treating AI as a teammate rather than a tool is crucial for success. The book then progresses through increasingly sophisticated tooling options, from simple chatbots to full-featured coding assistants and finally to semi-autonomous coding agents.
+
+The narrative mirrors the actual evolution of AI coding tools, showing how each advance builds on previous capabilities while introducing new challenges. This evolution follows three overlapping waves:
+1. Manual coding (traditional development)
+2. Chat coding (conversational development with AI)
+3. Agentic coding (delegating to semi-autonomous AI agents)
+
+Despite rapid advances in AI coding capabilities, the authors emphasize that all three approaches remain relevant, with vibe coding techniques applicable across the spectrum.
+
+## Core Terminology and Conceptual Distinctions
+
+Part 2 clarifies important distinctions that are essential for effective implementation:
+
+**Vibe Coding vs. Vibe Engineering**: While both involve AI collaboration, vibe coding represents Karpathy's casual, "turn your brain off" approach best suited for prototyping and personal projects. Vibe engineering maintains rigorous standards while leveraging AI capabilities, making it appropriate for production systems.
+
+**Chatbots, Coding Assistants, and Agents** form a progression of increasing capability and autonomy:
+- **Chatbots** like ChatGPT and Claude lack specific code context but offer large screen real estate and superior conversation management
+- **Coding Assistants** provide deep understanding of your codebase through indexing and integration with your IDE
+- **Coding Agents** can execute multi-step tasks with minimal supervision, effectively turning individual developers into teams
+
+The book documents the surprising reality that ChatGPT remains the #1 coding assistant worldwide despite its limitations, showing how screen real estate and conversation management compensate for lack of code context.
+
+## Key Practical Frameworks
+
+Several practical frameworks form the backbone of effective vibe coding implementation:
+
+**The Chat Mindset** reframes the developer-AI relationship as pair programming rather than tool usage. The AI is a human-like partner with strengths and weaknesses who complements your skills, not a deterministic tool to be used once and discarded if it fails.
+
+**Task Graphs** provide a mental model for breaking complex projects into manageable chunks that AI can tackle. The authors introduce the concept of "leaf nodes" – small, independent tasks that AI can accelerate 10-100x. Large-scale projects require decomposition into these smaller tasks, even as AI capabilities grow.
+
+**Prompt and Context Management** techniques help optimize AI interactions:
+- Initial prompts should be proportionally sized to the problem complexity
+- Reusable "prompt chunks" with different lifetimes can be stored in prompt libraries
+- Context selection becomes more important as projects grow beyond what can fit in a single query
+
+**Validation and Verification** approaches ensure AI-generated code is correct and appropriate:
+- LLMs should review their own work through iterative refinement
+- Multiple models can cross-check each other's output (while being aware of bias)
+- Traditional testing and verification remain essential
+
+**Agent Management Strategies** introduce the concept of orchestrating multiple AI agents simultaneously:
+- Current interfaces make multi-agent management challenging
+- Reading comprehension becomes a limiting factor
+- Future tools will enable developers to oversee dozens of agents concurrently
+
+## Practical Implementation Guidance
+
+The book provides actionable guidance for implementing vibe coding effectively:
+
+**When to Choose Chatbots vs. Coding Assistants**:
+- Use chatbots for smaller projects where the whole codebase fits in context
+- Switch to coding assistants when projects grow beyond what fits in a single query
+- Consider factors like screen real estate, conversation management, and context fetching
+
+**Context Management Techniques**:
+- For small projects, upload the entire repo as context
+- For larger projects, selectively include relevant modules
+- Use @-mentions to reference specific code elements
+- Implement custom RAG (Retrieval-Augmented Generation) for enterprise systems
+
+**Code Validation Approaches**:
+- Ask the AI to critique its own code (self-review)
+- Use multiple models to cross-check solutions (avoiding the "Multiple Witness Effect")
+- Leverage IDE tools for early detection of issues
+- Fix bugs as early as possible in the development cycle
+
+**Automation with Agents**:
+- Break tasks into well-defined chunks with clear success criteria
+- Maintain appropriate supervision based on task complexity
+- Create specialized "task machines" for recurring workflows
+- Consider parallel deployment of multiple agents for greater productivity
+
+## Illustrative War Stories and Examples
+
+The authors share revealing personal experiences that highlight both pitfalls and successes:
+
+**Steve's Ruby-to-Kotlin Port**: A seemingly straightforward task of porting a 3,500-line Ruby script to Kotlin reveals the limitations of LLMs when dealing with Gradle configuration. This demonstrates the importance of knowing when to fold your cards and switch approaches when the AI gets stuck in circular reasoning.
+
+**Steve's Embarrassing TypeScript Code**: A complex but pointless asynchronous function approved by an LLM turned out to be equivalent to a simple one-liner, highlighting the need to ask the AI about code elegance and simplicity.
+
+**Gene and Steve's Pair Programming Session**: Using a mix of chatbot and coding assistant tools to modify a Clojure project demonstrates how different AI tools excel at different aspects of development, and how combining them creates a powerful workflow.
+
+These real-world examples illustrate common failure modes to watch for:
+- LLMs confidently generating needlessly complex code
+- Getting stuck in loops of incorrect suggestions
+- Hitting context window limitations
+- Failing to recognize when a task exceeds AI capabilities
+
+The stories also demonstrate successful strategies:
+- Breaking problems into appropriate chunks
+- Knowing when to switch between AI tools
+- Using multiple models for verification
+- Maintaining a healthy skepticism while still leveraging AI capabilities
+
+## Conclusion
+
+Part 2 provides a comprehensive roadmap for implementing vibe coding in real-world development. It acknowledges the current limitations while demonstrating how to maximize the benefits available today. The techniques presented will remain relevant even as AI tools evolve, since the fundamental approach of effective collaboration with AI assistants applies regardless of how autonomous they become.
+
+The authors conclude that while programming is changing dramatically, the essence remains: creating software that delivers value. Vibe coding just makes it exponentially faster and more accessible, allowing developers to focus on higher-level concerns while delegating implementation details to their AI partners.
+
+`
+
 // ====
 
 const PROJECT_GOALS_TEXT = `Steve Yegge (of Amazon and Google fame) and Gene Kim (of Phoenix Project and DevOps Handbook fame) are working on this book, with tentative titles of:

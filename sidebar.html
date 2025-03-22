@@ -51,7 +51,7 @@
 
     <!-- Control buttons -->
     <button onclick="reloadSidebar()">Reload Sidebar</button>
-    <button onclick="getDoc()">Reload Source Docs</button>
+    <button onclick="refreshDocCache()">Reload Source Docs</button>
     <button onclick="getSelection2()">Get Selection</button>
     <button onclick="generatePromptAndCopyToClipboard()">Generate Prompt and Copy to Clipboard</button>
     
@@ -87,10 +87,78 @@
         loadInitialState();
       };
 
+      // Global cache variables for document content
+      let cachedPart1Content = null;
+      let cachedPart2Content = null;
+      let lastPart1LoadTime = 0;
+      let lastPart2LoadTime = 0;
+      const CACHE_EXPIRY_MS = 60000; // 1 minute
+      
       // Initialize by loading document and selection
       function loadInitialState() {
-        getDoc();
+        // Get selection immediately
         getSelection2();
+        
+        // Start background loading of documents
+        logMessage('Initializing document cache...');
+        loadDocumentCache();
+        
+        // Set up periodic background refresh
+        setInterval(function() {
+          logMessage('Periodic cache refresh started');
+          loadDocumentCache();
+        }, CACHE_EXPIRY_MS);
+      }
+      
+      // Load both documents in background
+      function loadDocumentCache() {
+        const now = Date.now();
+        
+        // Check if we need to refresh Part 1
+        if (!cachedPart1Content || (now - lastPart1LoadTime > CACHE_EXPIRY_MS)) {
+          logMessage('Pre-loading Part 1 document in background...');
+          loadPart1InBackground();
+        }
+        
+        // Check if we need to refresh Part 2
+        if (!cachedPart2Content || (now - lastPart2LoadTime > CACHE_EXPIRY_MS)) {
+          logMessage('Pre-loading Part 2 document in background...');
+          loadPart2InBackground();
+        }
+      }
+      
+      // Load Part 1 in background
+      function loadPart1InBackground() {
+        google.script.run
+          .withSuccessHandler(function(content) {
+            cachedPart1Content = content;
+            lastPart1LoadTime = Date.now();
+            
+            // Calculate word count
+            const wordCount = content.trim().split(/\s+/).length;
+            logMessage(`✅ Part 1 document cached (${wordCount} words)`);
+          })
+          .withFailureHandler(function(error) {
+            logMessage(`❌ Failed to cache Part 1: ${error}`);
+          })
+          .getPart1Doc();
+      }
+      
+      // Load Part 2 in background
+      function loadPart2InBackground() {
+        google.script.run
+          .withSuccessHandler(function(content) {
+            cachedPart2Content = content;
+            lastPart2LoadTime = Date.now();
+            
+            // Calculate word count
+            const wordCount = content.trim().split(/\s+/).length;
+            logMessage(`✅ Part 2 document cached (${wordCount} words)`);
+          })
+          .withFailureHandler(function(error) {
+            logMessage(`❌ Failed to cache Part 2: ${error}`);
+          })
+          .getPart2Doc();
       }
 
       // NOTE: getSelection() is reserved: will never be called.
@@ -147,21 +215,34 @@
           .getSelectedText();
       }
 
-      // Load the document content
-      function getDoc() {
-        logMessage('getDoc called! (takes about 15s to load)');
-        google.script.run
-          .withSuccessHandler(function(content) {
-            // Calculate and display word count
-            var wordCount = content.trim().split(/\s+/).length;
-            document.getElementById('manuscript-context').innerHTML = 'Word count: ' + wordCount;
-            logMessage('Document loaded, word count: ' + wordCount);
-          })
-          .withFailureHandler(function(error) {
-            logMessage('Error: ' + error);
-          })
-          .getDoc();
-        logMessage('getDoc request sent, waiting for response...');
+      // Display document summary from cache (used by the "Reload Source Docs" button)
+      function showCachedDocsSummary() {
+        // Create a formatted summary of cached documents
+        let summaryHTML = '<div style="padding: 10px; background-color: #f8f9fa; border-radius: 4px;">';
+        
+        // Part 1 summary
+        if (cachedPart1Content) {
+          const part1WordCount = cachedPart1Content.trim().split(/\s+/).length;
+          const part1Age = Math.round((Date.now() - lastPart1LoadTime) / 1000);
+          summaryHTML += `<strong>Part 1:</strong> ${part1WordCount} words (cached ${part1Age}s ago)<br>`;
+        } else {
+          summaryHTML += '<strong>Part 1:</strong> Not cached yet<br>';
+        }
+        
+        // Part 2 summary
+        if (cachedPart2Content) {
+          const part2WordCount = cachedPart2Content.trim().split(/\s+/).length;
+          const part2Age = Math.round((Date.now() - lastPart2LoadTime) / 1000);
+          summaryHTML += `<strong>Part 2:</strong> ${part2WordCount} words (cached ${part2Age}s ago)<br>`;
+        } else {
+          summaryHTML += '<strong>Part 2:</strong> Not cached yet<br>';
+        }
+        
+        summaryHTML += '</div>';
+        
+        // Display in the manuscript context area
+        document.getElementById('manuscript-context').innerHTML = summaryHTML;
+        logMessage('Showing cached documents summary');
       }
 
       // Reload the entire sidebar
@@ -174,6 +255,30 @@
             console.error('Error reloading sidebar: ', error);
           })
           .showSidebar();
+      }
+      
+      // Force refresh of document cache and update UI
+      function refreshDocCache() {
+        logMessage('🔄 Forcing refresh of document cache...');
+        
+        // Reset timestamps to force refresh
+        lastPart1LoadTime = 0;
+        lastPart2LoadTime = 0;
+        
+        // Show loading indicators
+        document.getElementById('manuscript-context').innerHTML = 
+          '<div style="padding: 10px; background-color: #f8f9fa; border-radius: 4px; text-align: center;">' +
+          '<strong>Refreshing document cache...</strong><br>' +
+          '<div style="margin-top: 10px;">Loading Part 1 and Part 2 documents...</div>' +
+          '</div>';
+        
+        // Load both documents
+        loadDocumentCache();
+        
+        // After a delay, show the summary
+        setTimeout(function() {
+          showCachedDocsSummary();
+        }, 1500);
       }
 
       // Generate prompt and copy to clipboard
@@ -464,15 +569,15 @@
       
       // Get Part 1 document and generate prompt
       function getPart1DocAndPrompt() {
-        logMessage('Getting Part 1 document... (takes about 15s)');
+        logMessage('Getting Part 1 document...');
         
-        // First get the latest selection, then load document
+        // First get the latest selection, then use cached document or load if needed
         logMessage('Updating selected text first...');
-        getSelectionThenLoadPart1();
+        getSelectionThenUsePart1();
       }
       
-      // Helper function to get selection before loading Part 1
-      function getSelectionThenLoadPart1() {
+      // Helper function to get selection before using Part 1
+      function getSelectionThenUsePart1() {
         google.script.run
           .withSuccessHandler(function(selectedText) {
             // Log selection status
@@ -483,71 +588,90 @@
               logMessage('⚠️ No text currently selected');
             }
             
-            // Now proceed with loading Part 1
-            proceedWithPart1Loading();
+            // Now proceed with Part 1 - use cached version if available
+            useCachedOrLoadPart1();
           })
           .withFailureHandler(function(error) {
             logMessage('Error getting selection: ' + error);
-            // Still proceed with loading the document
-            proceedWithPart1Loading();
+            // Still proceed with using Part 1
+            useCachedOrLoadPart1();
           })
           .getSelectedText();
       }
       
-      // Helper function to load Part 1 after selection is updated
-      function proceedWithPart1Loading() {
-        google.script.run
-          .withSuccessHandler(function(content) {
-            // Check for access errors
-            if (content.includes('Access Error') || content.includes('Error Accessing Document')) {
-              logMessage('⚠️ Document access error detected');
+      // Helper function to use cached Part 1 or load if needed
+      function useCachedOrLoadPart1() {
+        // Check if we have a valid cache
+        const now = Date.now();
+        if (cachedPart1Content && (now - lastPart1LoadTime <= CACHE_EXPIRY_MS)) {
+          logMessage('✅ Using cached Part 1 document (fast)');
+          processPart1Content(cachedPart1Content);
+        } else {
+          // Cache is invalid or missing, need to load
+          logMessage('Cache expired or missing, loading Part 1 document (takes about 15s)...');
+          google.script.run
+            .withSuccessHandler(function(content) {
+              // Update cache
+              cachedPart1Content = content;
+              lastPart1LoadTime = Date.now();
               
-              // Show warning message in the manuscript context area
+              // Process the content
+              processPart1Content(content);
+            })
+            .withFailureHandler(function(error) {
+              logMessage('Error: ' + error);
+              // Show error message
               document.getElementById('manuscript-context').innerHTML = 
                 '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
-                '<strong>⚠️ Document Access Error</strong><br><br>' +
-                'Could not access the Part 1 document. This document may not be shared with your Google account.<br><br>' +
-                '<strong>To fix this issue:</strong><br>' +
-                '1. Make sure you\'re logged in with the correct Google account<br>' +
-                '2. Ask the document owner to share it with your email address<br>' +
-                '3. Open the document directly in Google Docs first to accept any sharing invitations<br><br>' +
-                '<em>Note: The prompt will still be generated using placeholder text for Part 1.</em>' +
-                '</div>';
-                
-              // Continue with prompt generation despite error
-              logMessage('Continuing with prompt generation using placeholder content...');
-              generatePromptAndCopyToClipboard();
-            } else {
-              // Normal flow - no errors
-              var wordCount = content.trim().split(/\s+/).length;
-              document.getElementById('manuscript-context').innerHTML = 'Part 1 Word count: ' + wordCount;
-              logMessage('Part 1 loaded, generating prompt...');
-              
-              // Generate and copy the prompt
-              generatePromptAndCopyToClipboard();
-            }
-          })
-          .withFailureHandler(function(error) {
-            logMessage('Error: ' + error);
-            // Show error message
-            document.getElementById('manuscript-context').innerHTML = 
-              '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
-              '<strong>⚠️ Error</strong><br><br>' + error + '</div>';
-          })
-          .getPart1Doc();
+                '<strong>⚠️ Error</strong><br><br>' + error + '</div>';
+            })
+            .getPart1Doc();
+        }
+      }
+      
+      // Process the Part 1 content (either from cache or freshly loaded)
+      function processPart1Content(content) {
+        // Check for access errors
+        if (content.includes('Access Error') || content.includes('Error Accessing Document')) {
+          logMessage('⚠️ Document access error detected');
+          
+          // Show warning message in the manuscript context area
+          document.getElementById('manuscript-context').innerHTML = 
+            '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
+            '<strong>⚠️ Document Access Error</strong><br><br>' +
+            'Could not access the Part 1 document. This document may not be shared with your Google account.<br><br>' +
+            '<strong>To fix this issue:</strong><br>' +
+            '1. Make sure you\'re logged in with the correct Google account<br>' +
+            '2. Ask the document owner to share it with your email address<br>' +
+            '3. Open the document directly in Google Docs first to accept any sharing invitations<br><br>' +
+            '<em>Note: The prompt will still be generated using placeholder text for Part 1.</em>' +
+            '</div>';
+            
+          // Continue with prompt generation despite error
+          logMessage('Continuing with prompt generation using placeholder content...');
+          generatePromptAndCopyToClipboard();
+        } else {
+          // Normal flow - no errors
+          var wordCount = content.trim().split(/\s+/).length;
+          document.getElementById('manuscript-context').innerHTML = 'Part 1 Word count: ' + wordCount;
+          logMessage('Part 1 ready, generating prompt...');
+          
+          // Generate and copy the prompt
+          generatePromptAndCopyToClipboard();
+        }
       }
       
       // Get Part 2 document and generate prompt
       function getPart2DocAndPrompt() {
-        logMessage('Getting Part 2 document... (takes about 15s)');
+        logMessage('Getting Part 2 document...');
         
-        // First get the latest selection, then load document
+        // First get the latest selection, then use cached document or load if needed
         logMessage('Updating selected text first...');
-        getSelectionThenLoadPart2();
+        getSelectionThenUsePart2();
       }
       
-      // Helper function to get selection before loading Part 2
-      function getSelectionThenLoadPart2() {
+      // Helper function to get selection before using Part 2
+      function getSelectionThenUsePart2() {
         google.script.run
           .withSuccessHandler(function(selectedText) {
             // Log selection status
@@ -558,58 +682,77 @@
               logMessage('⚠️ No text currently selected');
             }
             
-            // Now proceed with loading Part 2
-            proceedWithPart2Loading();
+            // Now proceed with Part 2 - use cached version if available
+            useCachedOrLoadPart2();
           })
           .withFailureHandler(function(error) {
             logMessage('Error getting selection: ' + error);
-            // Still proceed with loading the document
-            proceedWithPart2Loading();
+            // Still proceed with using Part 2
+            useCachedOrLoadPart2();
           })
           .getSelectedText();
       }
       
-      // Helper function to load Part 2 after selection is updated
-      function proceedWithPart2Loading() {
-        google.script.run
-          .withSuccessHandler(function(content) {
-            // Check for access errors
-            if (content.includes('Access Error') || content.includes('Error Accessing Document')) {
-              logMessage('⚠️ Document access error detected');
+      // Helper function to use cached Part 2 or load if needed
+      function useCachedOrLoadPart2() {
+        // Check if we have a valid cache
+        const now = Date.now();
+        if (cachedPart2Content && (now - lastPart2LoadTime <= CACHE_EXPIRY_MS)) {
+          logMessage('✅ Using cached Part 2 document (fast)');
+          processPart2Content(cachedPart2Content);
+        } else {
+          // Cache is invalid or missing, need to load
+          logMessage('Cache expired or missing, loading Part 2 document (takes about 15s)...');
+          google.script.run
+            .withSuccessHandler(function(content) {
+              // Update cache
+              cachedPart2Content = content;
+              lastPart2LoadTime = Date.now();
               
-              // Show warning message in the manuscript context area
+              // Process the content
+              processPart2Content(content);
+            })
+            .withFailureHandler(function(error) {
+              logMessage('Error: ' + error);
+              // Show error message
               document.getElementById('manuscript-context').innerHTML = 
                 '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
-                '<strong>⚠️ Document Access Error</strong><br><br>' +
-                'Could not access the Part 2 document. This document may not be shared with your Google account.<br><br>' +
-                '<strong>To fix this issue:</strong><br>' +
-                '1. Make sure you\'re logged in with the correct Google account<br>' +
-                '2. Ask the document owner to share it with your email address<br>' +
-                '3. Open the document directly in Google Docs first to accept any sharing invitations<br><br>' +
-                '<em>Note: The prompt will still be generated using the Part 1 summary and placeholder text for Part 2.</em>' +
-                '</div>';
-                
-              // Continue with prompt generation despite error
-              logMessage('Continuing with prompt generation using placeholder content...');
-              generatePromptAndCopyToClipboard();
-            } else {
-              // Normal flow - no errors
-              var wordCount = content.trim().split(/\s+/).length;
-              document.getElementById('manuscript-context').innerHTML = 'Part 2 Word count: ' + wordCount;
-              logMessage('Part 2 loaded, generating prompt...');
-              
-              // Generate and copy the prompt
-              generatePromptAndCopyToClipboard();
-            }
-          })
-          .withFailureHandler(function(error) {
-            logMessage('Error: ' + error);
-            // Show error message
-            document.getElementById('manuscript-context').innerHTML = 
-              '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
-              '<strong>⚠️ Error</strong><br><br>' + error + '</div>';
-          })
-          .getPart2Doc();
+                '<strong>⚠️ Error</strong><br><br>' + error + '</div>';
+            })
+            .getPart2Doc();
+        }
+      }
+      
+      // Process the Part 2 content (either from cache or freshly loaded)
+      function processPart2Content(content) {
+        // Check for access errors
+        if (content.includes('Access Error') || content.includes('Error Accessing Document')) {
+          logMessage('⚠️ Document access error detected');
+          
+          // Show warning message in the manuscript context area
+          document.getElementById('manuscript-context').innerHTML = 
+            '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
+            '<strong>⚠️ Document Access Error</strong><br><br>' +
+            'Could not access the Part 2 document. This document may not be shared with your Google account.<br><br>' +
+            '<strong>To fix this issue:</strong><br>' +
+            '1. Make sure you\'re logged in with the correct Google account<br>' +
+            '2. Ask the document owner to share it with your email address<br>' +
+            '3. Open the document directly in Google Docs first to accept any sharing invitations<br><br>' +
+            '<em>Note: The prompt will still be generated using the Part 1 summary and placeholder text for Part 2.</em>' +
+            '</div>';
+            
+          // Continue with prompt generation despite error
+          logMessage('Continuing with prompt generation using placeholder content...');
+          generatePromptAndCopyToClipboard();
+        } else {
+          // Normal flow - no errors
+          var wordCount = content.trim().split(/\s+/).length;
+          document.getElementById('manuscript-context').innerHTML = 'Part 2 Word count: ' + wordCount;
+          logMessage('Part 2 ready, generating prompt...');
+          
+          // Generate and copy the prompt
+          generatePromptAndCopyToClipboard();
+        }
       }
     </script>
   </body>
