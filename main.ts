@@ -186,9 +186,37 @@ function getPart3Doc() {
     // Get markdown for Part 3 with retry logic
     const part3Markdown = retryOperation(() => exportDocToMarkdown(DOC_ID_PART3), 3);
     
-    // log the word count
+    // Check if the content is suspiciously short
     const getWordCount = (text: string): number => text.trim().split(/\s+/).length;
-    Logger.log(`Part 3 word count: ${getWordCount(part3Markdown)}`);
+    const wordCount = getWordCount(part3Markdown);
+    Logger.log(`Part 3 word count: ${wordCount}`);
+    
+    if (wordCount < 100) {
+      Logger.log(`⚠️ WARNING: Part 3 content is suspiciously short (${wordCount} words). This may indicate an issue with document access or content.`);
+      
+      // Check if it contains error messages
+      if (part3Markdown.includes('Access Error') || part3Markdown.includes('Error Accessing Document')) {
+        Logger.log('Part 3 document access error detected');
+        return part3Markdown; // Return the error message directly
+      } else {
+        // Add warning to the content since it's unusually short
+        const warningMessage = `
+# WARNING: Incomplete Content Detected
+
+The Part 3 document appears to be incomplete. Only ${wordCount} words were loaded, but Part 3 should have approximately 11,000 words.
+
+Possible causes:
+1. The document ID may be incorrect
+2. You may not have proper access to the document
+3. The document may be empty or contain very limited content
+4. There may be a technical issue with the document export process
+
+Current document ID: ${DOC_ID_PART3}
+
+${part3Markdown}`;
+        return warningMessage;
+      }
+    }
     
     const formattedMarkdown = "# Part 3\n\n" + part3Markdown;
     

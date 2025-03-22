@@ -179,7 +179,18 @@
             
             // Calculate word count
             const wordCount = content.trim().split(/\s+/).length;
-            logMessage(`✅ Part 3 document cached (${wordCount} words)`);
+            
+            // Check for warnings or suspiciously small word counts
+            if (content.includes('WARNING: Incomplete Content Detected')) {
+              // Extract word count from warning message
+              const match = content.match(/Only (\d+) words were loaded/);
+              const extractedCount = match ? match[1] : wordCount;
+              logMessage(`⚠️ Part 3 document cached with WARNING: incomplete content (${extractedCount} words, expected ~11,000 words)`);
+            } else if (wordCount < 1000) {
+              logMessage(`⚠️ Part 3 document cached but content appears incomplete (${wordCount} words, expected ~11,000 words)`);
+            } else {
+              logMessage(`✅ Part 3 document cached (${wordCount} words)`);
+            }
           })
           .withFailureHandler(function(error) {
             logMessage(`❌ Failed to cache Part 3: ${error}`);
@@ -268,7 +279,19 @@
         if (cachedPart3Content) {
           const part3WordCount = cachedPart3Content.trim().split(/\s+/).length;
           const part3Age = Math.round((Date.now() - lastPart3LoadTime) / 1000);
-          summaryHTML += `<strong>Part 3:</strong> ${part3WordCount} words (cached ${part3Age}s ago)<br>`;
+          
+          if (cachedPart3Content.includes('WARNING: Incomplete Content Detected')) {
+            // Extract word count from warning message if available
+            const match = cachedPart3Content.match(/Only (\d+) words were loaded/);
+            const extractedCount = match ? match[1] : part3WordCount;
+            summaryHTML += `<strong>Part 3:</strong> <span style="color: #e67e22;">⚠️ INCOMPLETE: only ${extractedCount} words</span> (expected ~11,000, cached ${part3Age}s ago)<br>`;
+          } else if (part3WordCount < 1000) {
+            // Content is suspiciously small
+            summaryHTML += `<strong>Part 3:</strong> <span style="color: #e67e22;">⚠️ INCOMPLETE: only ${part3WordCount} words</span> (expected ~11,000, cached ${part3Age}s ago)<br>`;
+          } else {
+            // Content looks reasonable
+            summaryHTML += `<strong>Part 3:</strong> ${part3WordCount} words (cached ${part3Age}s ago)<br>`;
+          }
         } else {
           summaryHTML += '<strong>Part 3:</strong> Not cached yet<br>';
         }
@@ -855,7 +878,7 @@
       
       // Process the Part 3 content
       function processPart3Content(content) {
-        // Check for access errors
+        // Check for access errors or warning about incomplete content
         if (content.includes('Access Error') || content.includes('Error Accessing Document')) {
           logMessage('⚠️ Document access error detected');
           
@@ -874,11 +897,48 @@
           // Continue with prompt generation despite error
           logMessage('Continuing with prompt generation using placeholder content...');
           generatePromptAndCopyToClipboard();
+        } else if (content.includes('WARNING: Incomplete Content Detected')) {
+          logMessage('⚠️ Incomplete content warning detected');
+          
+          // Parse the word count from the content
+          const wordCountMatch = content.match(/Only (\d+) words were loaded/);
+          const wordCount = wordCountMatch ? wordCountMatch[1] : 'unknown';
+          
+          // Show warning message in the manuscript context area
+          document.getElementById('manuscript-context').innerHTML = 
+            '<div style="color: #e67e22; background-color: #fef9e7; padding: 10px; border-radius: 4px; border: 1px solid #e67e22;">' +
+            '<strong>⚠️ Incomplete Document Warning</strong><br><br>' +
+            `Only ${wordCount} words were loaded for Part 3, but it should be ~11,000 words.<br><br>` +
+            '<strong>Possible causes:</strong><br>' +
+            '1. The document ID may be incorrect<br>' +
+            '2. You may not have proper access to the document<br>' +
+            '3. The document may be empty or contain limited content<br>' +
+            '4. There may be a technical issue with the document export<br><br>' +
+            '<em>Note: The prompt will still be generated, but may not contain complete Part 3 content.</em>' +
+            '</div>';
+            
+          // Continue with prompt generation despite warning
+          logMessage(`Continuing with prompt generation using incomplete content (${wordCount} words)...`);
+          generatePromptAndCopyToClipboard();
         } else {
           // Normal flow - no errors
           var wordCount = content.trim().split(/\s+/).length;
-          document.getElementById('manuscript-context').innerHTML = 'Part 3 Word count: ' + wordCount;
-          logMessage('Part 3 ready, generating prompt...');
+          
+          // Check if content seems suspiciously short but didn't trigger the warning
+          if (wordCount < 1000) {
+            document.getElementById('manuscript-context').innerHTML = 
+              `<div style="padding: 10px; background-color: #fef9e7; border-radius: 4px; border: 1px solid #e67e22;">
+                <strong>⚠️ Part 3:</strong> Only ${wordCount} words loaded (expected ~11,000 words)<br>
+                The document appears to be incomplete. The prompt may not contain all necessary content.
+              </div>`;
+            logMessage(`⚠️ Part 3 content suspiciously short (${wordCount} words) but proceeding...`);
+          } else {
+            document.getElementById('manuscript-context').innerHTML = 
+              `<div style="padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
+                <strong>Part 3:</strong> ${wordCount} words
+              </div>`;
+            logMessage(`Part 3 ready, generating prompt (${wordCount} words)...`);
+          }
           
           // Generate and copy the prompt
           generatePromptAndCopyToClipboard();
