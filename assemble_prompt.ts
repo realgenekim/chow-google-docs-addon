@@ -166,29 +166,45 @@ function assemblePrompt(manuscript: string, currentSection: string): PromptSecti
   console.log('manuscript (first 250 chars):', manuscript.substring(0, 250));
   console.log('currentSection (first 250 chars):', currentSection.substring(0, 250));
   
-  return [
+  // Check if this is Part 2 content
+  const isPart2 = manuscript.startsWith('# Part 2');
+  
+  // Create base prompt sections
+  const promptSections = [
     { "project-goals": PROJECT_GOALS_TEXT },
-    { "your-task": YOUR_TASK_TEXT },
-    { "manuscript-context": manuscript },
-    { "section-to-be-worked-on": currentSection }
+    { "your-task": YOUR_TASK_TEXT }
   ];
+  
+  // Handle Part 2 differently - add part1-summary as a separate field
+  if (isPart2) {
+    promptSections.push({ "part1-summary": PART1_SUMMARY });
+    promptSections.push({ "manuscript-context": manuscript });
+  } else {
+    promptSections.push({ "manuscript-context": manuscript });
+  }
+  
+  // Always add the section to be worked on
+  promptSections.push({ "section-to-be-worked-on": currentSection });
+  
+  return promptSections;
 }
 
 function testAssemblePrompt(): void {
+  // Test with regular content
   const testManuscript = "manuscript";
   const testSection = "section to be worked on";
   
   const result = assemblePrompt(testManuscript, testSection);
-  Logger.log("Test result: " + JSON.stringify(result, null, 2));
+  Logger.log("Test result (regular content): " + JSON.stringify(result, null, 2));
   
-  // Basic validation
+  // Basic validation for regular content
   if (result.length !== 4) {
     Logger.log("Error: Expected 4 sections in the prompt, got " + result.length);
     return;
   }
   
   if (result[2]["manuscript-context"] !== testManuscript) {
-    Logger.log("Error: Manuscript content mismatch");
+    Logger.log("Error: Manuscript content mismatch for regular content");
     return;
   }
   
@@ -197,5 +213,34 @@ function testAssemblePrompt(): void {
     return;
   }
   
-  Logger.log("Test completed successfully");
+  // Test with Part 2 content
+  const testPart2Manuscript = "# Part 2\n\nSome part 2 content";
+  
+  const resultPart2 = assemblePrompt(testPart2Manuscript, testSection);
+  Logger.log("Test result (Part 2 content): " + JSON.stringify(resultPart2, null, 2));
+  
+  // Validate Part 2 handling - should have 5 sections with part1-summary
+  if (resultPart2.length !== 5) {
+    Logger.log("Error: Expected 5 sections in Part 2 prompt, got " + resultPart2.length);
+    return;
+  }
+  
+  // Check for part1-summary field
+  if (!resultPart2[2]["part1-summary"]) {
+    Logger.log("Error: No part1-summary field found in Part 2 prompt");
+    return;
+  }
+  
+  if (resultPart2[2]["part1-summary"] !== PART1_SUMMARY) {
+    Logger.log("Error: Part 1 summary content mismatch");
+    return;
+  }
+  
+  // Check manuscript-context contains only Part 2 content
+  if (resultPart2[3]["manuscript-context"] !== testPart2Manuscript) {
+    Logger.log("Error: Manuscript context should contain only Part 2 content");
+    return;
+  }
+  
+  Logger.log("All tests completed successfully");
 }
