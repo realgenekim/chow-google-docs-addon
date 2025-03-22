@@ -3,147 +3,76 @@ interface PromptSection {
 }
 
 const PART1_SUMMARY =
-`# Essential Framework from Part 1: "The Vibe Coding Handbook"
+`
 
-## Outline/Structure of Part 1
+When working on Part 2 of "The Vibe Coding Handbook," please maintain continuity with Part 1 by following this essential framework and writing style guidance:
 
-**Preface**: Steve and Gene's personal aha moments
-- Steve's transition from leadership to hands-on coding to explore AI capabilities
-- Gene's return to coding after 17 years and his breakthrough moments with AI
-- Both authors' sleepless nights from excitement about AI coding possibilities
+## Part 1 Framework Summary
 
-**Chapter 3: The Major Shift in Programming Happening Now**
-- Dr. Erik Meijer's declaration: "The days of writing code by hand are coming to an end"
-- Dr. Andrej Karpathy's "vibe coding" concept versus traditional programming
-- The spectrum of positions: Brendan Humphreys (skeptical) to Sergey Brin (enthusiastic)
-- Introduction of "vibe engineering" as a middle path
+1. **Outline/Structure of Part 1**:
+   - Preface: Steve and Gene's personal aha moments with AI coding
+   - Chapter 3: The Major Shift in Programming Happening Now
+   - Chapter 4: Seven Decades of Technology Revolutions
+   - Chapter 5: AI Changing All Knowledge Work
+   - Chapter 6: Who This Book Is For
+   - Chapter 7: What Becomes More Important in a World of Coding AI
+   - Chapter 8: Pairing vs. Delegation with AI
+   - Chapter 9: The Value That Vibe Coding Creates (FAAFO)
 
-**Chapter 4: Seven Decades of Technology Revolutions**
-- Programming languages evolution: from machine code to high-level abstractions
-- Development environment transformation: from punch cards to modern IDEs
-- Knowledge access revolution: from physical manuals to instant online resources
-- The persistent complexity challenges despite these advances
-- Parallels with graphics programming evolution (Steve's war story)
+2. **Key Terminology**:
+   - "Vibe coding": Karpathy's casual "turn your brain off" approach
+   - "Vibe engineering": Our disciplined approach maintaining engineering rigor
+   - The kitchen/chef metaphor: You as head chef, AI as sous chef
 
-**Chapter 5: AI Changing All Knowledge Work**
-- OpenAI Jobs Report findings: 80% of US workers affected, knowledge workers most exposed
-- Impact on junior developers and the restructuring of work hierarchies
-- Tim O'Reilly's perspective: AI will create more developer jobs, not fewer
-- Potential economic impacts and timeline predictions for AGI
+3. **The FAAFO Framework**:
+   - Fast: Writing code significantly faster
+   - Ambitious: Tackling previously unattainable projects
+   - Alone: Accomplishing multi-person tasks independently
+   - Fun: Making programming more enjoyable
+   - Optionality: Exploring multiple approaches before committing
 
-**Chapter 6: Who This Book Is For**
-- Target audiences: active developers, tech leaders, returning coders, product owners, infrastructure engineers, tech-adjacent roles, students
-- Gene's story: returning to coding after 17 years
-- Steve's story: revitalizing a 30-year game project with AI
+4. **Our Middle-Path Position**:
+   Between skeptics (Humphreys) and enthusiasts (Brin, Karpathy)
 
-**Chapter 7: What Becomes More Important in a World of Coding AI**
-- The concept of sociotechnical maestros
-- Architecture as enabler of independence
-- Fast feedback loops for quality and progress
-- Experience and judgment for guiding AI
+5. **Three Critical Elements**:
+   - Architecture enabling independence of action
+   - Fast feedback loops for quality assessment
+   - Human judgment guiding AI capabilities
 
-**Chapter 8: Pairing vs. Delegation with AI**
-- The spectrum from tight collaboration to autonomous delegation
-- Andy Grove's framework for delegation applied to AI
-- Historical examples of extreme delegation contrasted with AI usage
-- Guidance on when to pair versus when to delegate
+6. **Pairing vs. Delegation Spectrum**:
+   From full delegation (rare) to active pairing (most common)
 
-**Chapter 9: The Value That Vibe Coding Creates (FAAFO)**
-- Fast: Writing code significantly faster
-- Ambitious: Tackling previously unattainable projects
-- Alone: Accomplishing multi-person tasks independently
-- Fun: Making programming more enjoyable
-- Optionality: Exploring multiple approaches before committing
+## Style and Tone Guidance
 
-## Key Terminology
+Please emulate the style and tone of these exemplary sections from Part 1:
 
-**Vibe Coding vs. Vibe Engineering**:
-- **Vibe coding** (Karpathy's term): The casual, "turn your brain off" approach where you "fully give in to the vibes," letting AI handle all details with minimal oversight. Suitable for prototyping and personal projects.
-- **Vibe engineering**: Our proposed disciplined approach that maintains engineering rigor while leveraging AI's capabilities. The developer maintains executive control while using AI as a powerful tool for production systems.
+### Exemplar 1: The Master Chef Metaphor
+"Let's explore what it means to do vibe engineering. Whether you've been programming for decades or are returning after years away, this new paradigm requires us to reimagine our relationship with software creation from the ground up.
 
-**The Kitchen/Chef Metaphor**:
-- You are the head chef in charge of the kitchen (your software project)
-- AI serves as your sous chef - knowledgeable but needs direction
-- You don't personally cook every dish (write every line of code) but maintain responsibility for the final product
-- Chef Isabella vs. Chef Vincent examples demonstrate good vs. poor approaches to architecture, feedback, and judgment
+The first time you sit down to program with an AI assistant, you might feel a bit like a head chef being paired with a brilliant but occasionally erratic sous chef who has somehow memorized every cookbook ever written. This new partner can work incredibly fast and has encyclopedic knowledge, but also occasionally suggests using ingredients that don't exist or insists on techniques that make no sense.
 
-## The FAAFO Framework
+Your AI sous chef has essentially read everything on the internet, can generate code in seconds that might take you hours, and never gets tired or frustrated. You can suddenly tackle projects that would have required an entire team. Five-year projects become feasible in five months, maybe even five weeks. You can explore multiple solution paths simultaneously instead of committing to just one. Perhaps most importantly, you'll likely find yourself having more fun as you're liberated from tedious implementation details to focus on creative problem-solving."
 
-**Fast**: Tasks that took days now take hours. Projects previously requiring weeks can be completed in days.
+### Exemplar 2: Writing in First Person Plural
+"We believe vibe coding creates five dimensions of value that together revolutionize what individual developers can accomplish — and therefore, it also impacts the organizations they are part of. To help you remember, we call these dimensions FAAFO — fast, ambitious, alone, fun, and optionality.
 
-**Ambitious**: The scope of what's achievable expands dramatically:
-- Small tasks previously "not worth the effort" become quick wins
-- Massive projects that seemed out of reach become feasible
+First, vibe coding helps you write code faster. Tasks that once took days can often be completed in hours. The acceleration comes not just from code generation, but from having an intelligent assistant to help with debugging, testing, and documentation."
 
-**Alone**: Work independently that once required multiple specialists:
-- Escape coordination costs and scheduling dependencies
-- Eliminate communication overhead and "mind reading" problems
-- Use ideal technologies without team knowledge constraints
+### Exemplar 3: Personal Stories and Direct Address
+"For both of us, these aren't just theoretical benefits—they've transformed our lives in deeply personal ways. Steve, after watching his beloved game Wyvern with over thirty years of unfixed bugs and aspirations, suddenly found a path to tackle them in the 4MM+ LoC codebase. For Gene, vibe engineering reopened doors to coding that had seemed closed since 1998, enabling him to write more code in 2024 than in any previous year of his career."
 
-**Fun**: Programming becomes more enjoyable:
-- Less time debugging trivial errors and syntax issues
-- More focus on creative problem-solving and design
-- Reduction in tedious implementation details
+## Style Elements to Maintain:
+1. Use first person plural ("we believe," "we suggest") for statements of opinion or guidance
+2. Use vivid metaphors and examples, especially extending the kitchen/chef comparison
+3. Address the reader directly ("you") when describing their experiences or providing advice
+4. Balance technical precision with accessible language for readers of varying backgrounds
+5. Include practical, concrete examples that illustrate abstract concepts
+6. Maintain a tone that is enthusiastic but grounded in engineering reality
+7. Use storytelling to illustrate key points, drawing from your experiences when relevant
+8. Inject occasional humor while maintaining overall professionalism
 
-**Optionality**: Explore multiple solutions before committing:
-- Transform architectural decisions from "one-way doors" to reversible choices
-- Prototype different approaches in parallel
-- Experience options hands-on rather than evaluating them theoretically
-- Create enormous competitive advantage through exploration (Toyota, Amazon examples)
-
-## Our Position on the AI Spectrum
-
-We advocate a balanced middle path between:
-- **Skeptics** (Humphreys): "No, you won't be vibe coding your way to production"
-- **Enthusiasts** (Brin, Karpathy): "Instead of fixing code, you regenerate it" and "forget the code even exists"
-
-Our position: Vibe engineering embraces AI's capabilities while maintaining engineering discipline:
-- Use "brain off" vibe coding for rapid prototyping and exploration
-- Apply rigorous vibe engineering for production systems
-- Human judgment and oversight remain essential
-- The role shifts from implementation to direction, not from responsibility
-
-## Three Critical Elements That Become More Important
-
-**1. Architecture**: Creating systems where humans and AI can work effectively
-- Good architecture enables independence of action
-- Reduces coordination costs and dependencies
-- Chef Isabella's kitchen with clear stations and interfaces vs. Chef Vincent's chaotic shared workspace
-
-**2. Fast Feedback Loops**: Getting immediate signals about progress and quality
-- Multiple levels of feedback: development, integration, production
-- Monitoring and observability become critical
-- Chef Isabella's constant tasting and rapid refinement vs. Chef Vincent's delayed quality checks
-
-**3. Human Judgment**: Guiding AI and recognizing its limitations
-- Developing a strong "nonsense detector"
-- Recognizing when AI is confidently wrong
-- Stopping unproductive approaches early
-- Chef Isabella's rigorous standards vs. Chef Vincent's overconfidence
-
-## Pairing vs. Delegation with AI
-
-**The Spectrum of Collaboration**:
-- **Full Delegation** (Rare): Simple, low-risk tasks with clear success criteria
-- **Guided Delegation** (Common): Medium-complexity tasks with defined boundaries
-- **Active Pairing** (Most Common): Complex, ambiguous, or high-risk tasks
-- **Expert Consultation**: When you need ideas rather than implementation
-
-**When to Delegate vs. Pair**:
-- Task novelty: How well-defined and familiar is the task?
-- Past experience: Has the AI shown success with similar tasks?
-- Skill level: How capable is the AI at this type of task?
-- Task impact: What are the consequences of failure?
-- Monitoring needs: How much oversight is required?
-
-**Warning Signs of Over-Delegation**:
-- Scope creep beyond original task
-- Unfamiliar patterns in generated code
-- Increasing solution complexity
-- Performance degradation
-- Documentation diverging from actual code behavior
-
-This framework provides the foundation for Part 2's practical guidance on implementing vibe engineering in daily development work.`
+Please use this framework and style guidance to inform the practical "how-to" focus of Part 2, ensuring consistency with Part 1 while avoiding unnecessary repetition of background material.
+`
 
 // ====
 
