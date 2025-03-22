@@ -86,13 +86,31 @@ function getSelectedText() {
 }
 
 
+// Import the PART1_SUMMARY from the assemble_prompt.ts file
+// @ts-ignore - this is defined in assemble_prompt.ts
+const { PART1_SUMMARY } = this;
+
 // Initialize global variables from properties
 let globalContentBook = PropertiesService.getUserProperties().getProperty('globalContentBook') || "";
 let globalSelection = PropertiesService.getUserProperties().getProperty('globalSelection') || "";
 
 function generatePromptAndCopyToClipboard() {
   const prompt = assemblePrompt(globalContentBook, globalSelection);
-  return JSON.stringify(prompt, null, 2); // Returns formatted JSON string
+  const result = JSON.stringify(prompt, null, 2); // Returns formatted JSON string
+  
+  // Log what mode we're using (full content or with Part 1 summary)
+  const isPart2 = globalContentBook.startsWith('# Part 2');
+  if (isPart2) {
+    Logger.log('Generated prompt for Part 2 with separate part1-summary field');
+    // Calculate sizes for comparison
+    const fullSize = result.length;
+    const part1SummarySize = PART1_SUMMARY.length;
+    Logger.log(`Using summary saves approximately ${Math.round((1 - part1SummarySize/30000) * 100)}% of context window compared to full Part 1`);
+  } else {
+    Logger.log('Generated prompt with full manuscript content');
+  }
+  
+  return result;
 }
 
 function getDoc() {

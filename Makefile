@@ -4,3 +4,9 @@ gitadd:
 
 clasp-watch:
 	clasp push --watch
+
+diff:
+	git diff | llm -s "summarize the diff" > /tmp/diffs
+
+gitcommit:
+	git commit -F /tmp/diffs
