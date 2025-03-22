@@ -99,24 +99,38 @@
         logMessage('getSelection called');
         google.script.run
           .withSuccessHandler(function(text) {
+            // Check if there's actually text selected
+            const hasSelection = text && text.trim() !== '' && text !== 'No text selected';
+            
             // Update the UI with selected text
-            const debugText = text.substring(0, 250) + (text.length > 250 ? '...' : '');
-            logMessage('Success handler called with text: ' + debugText);
+            if (hasSelection) {
+              const debugText = text.substring(0, 250) + (text.length > 250 ? '...' : '');
+              logMessage('Success handler called with text: ' + debugText);
+              
+              // Calculate word count
+              const wordCount = text.trim().split(/\s+/).length;
+              
+              // Truncate to 250 characters
+              const truncatedText = text.substring(0, 250);
+              const hasMore = text.length > 250;
+              
+              // Display truncated text with word count and indication if truncated
+              document.getElementById('selected-text').innerHTML = 
+                truncatedText + 
+                (hasMore ? '...' : '') + 
+                `\n\n[${wordCount} words total]`;
+            } else {
+              // No text selected
+              logMessage('No text currently selected');
+              
+              // Show placeholder with instructions
+              document.getElementById('selected-text').innerHTML = 
+                '<div style="color: #e67e22; padding: 5px; font-style: italic;">' +
+                'No text currently selected. Select text in the document to include it in the prompt.' +
+                '</div>';
+            }
             
-            // Calculate word count
-            const wordCount = text.trim().split(/\s+/).length;
-            
-            // Truncate to 250 characters
-            const truncatedText = text.substring(0, 250);
-            const hasMore = text.length > 250;
-            
-            // Display truncated text with word count and indication if truncated
-            document.getElementById('selected-text').innerHTML = 
-              truncatedText + 
-              (hasMore ? '...' : '') + 
-              `\n\n[${wordCount} words total]`;
-            
-            // Save selection to global variable on server
+            // Save selection to global variable on server (even if empty)
             google.script.run
               .withSuccessHandler(function() {
                 logMessage('Selection saved to global variable');
@@ -125,6 +139,10 @@
           })
           .withFailureHandler(function(error) {
             logMessage('Error: ' + error);
+            document.getElementById('selected-text').innerHTML = 
+              '<div style="color: #e74c3c; padding: 5px;">' +
+              'Error getting selection: ' + error +
+              '</div>';
           })
           .getSelectedText();
       }
@@ -447,6 +465,37 @@
       // Get Part 1 document and generate prompt
       function getPart1DocAndPrompt() {
         logMessage('Getting Part 1 document... (takes about 15s)');
+        
+        // First get the latest selection, then load document
+        logMessage('Updating selected text first...');
+        getSelectionThenLoadPart1();
+      }
+      
+      // Helper function to get selection before loading Part 1
+      function getSelectionThenLoadPart1() {
+        google.script.run
+          .withSuccessHandler(function(selectedText) {
+            // Log selection status
+            if (selectedText && selectedText.trim() !== '' && selectedText !== 'No text selected') {
+              const wordCount = selectedText.trim().split(/\s+/).length;
+              logMessage(`Selection updated: ${wordCount} words`);
+            } else {
+              logMessage('⚠️ No text currently selected');
+            }
+            
+            // Now proceed with loading Part 1
+            proceedWithPart1Loading();
+          })
+          .withFailureHandler(function(error) {
+            logMessage('Error getting selection: ' + error);
+            // Still proceed with loading the document
+            proceedWithPart1Loading();
+          })
+          .getSelectedText();
+      }
+      
+      // Helper function to load Part 1 after selection is updated
+      function proceedWithPart1Loading() {
         google.script.run
           .withSuccessHandler(function(content) {
             // Check for access errors
@@ -491,6 +540,37 @@
       // Get Part 2 document and generate prompt
       function getPart2DocAndPrompt() {
         logMessage('Getting Part 2 document... (takes about 15s)');
+        
+        // First get the latest selection, then load document
+        logMessage('Updating selected text first...');
+        getSelectionThenLoadPart2();
+      }
+      
+      // Helper function to get selection before loading Part 2
+      function getSelectionThenLoadPart2() {
+        google.script.run
+          .withSuccessHandler(function(selectedText) {
+            // Log selection status
+            if (selectedText && selectedText.trim() !== '' && selectedText !== 'No text selected') {
+              const wordCount = selectedText.trim().split(/\s+/).length;
+              logMessage(`Selection updated: ${wordCount} words`);
+            } else {
+              logMessage('⚠️ No text currently selected');
+            }
+            
+            // Now proceed with loading Part 2
+            proceedWithPart2Loading();
+          })
+          .withFailureHandler(function(error) {
+            logMessage('Error getting selection: ' + error);
+            // Still proceed with loading the document
+            proceedWithPart2Loading();
+          })
+          .getSelectedText();
+      }
+      
+      // Helper function to load Part 2 after selection is updated
+      function proceedWithPart2Loading() {
         google.script.run
           .withSuccessHandler(function(content) {
             // Check for access errors
