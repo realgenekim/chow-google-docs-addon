@@ -6,7 +6,7 @@ clasp-watch:
 	clasp push --watch
 
 diff:
-	git diff | llm -s "summarize the diff" > /tmp/diffs
+	git diff | llm -s "summarize the diffs; no preamble of 'The changes in the code include the following key modifications...'; just the diff descriptions." > /tmp/diffs
 
 gitcommit:
 	git commit -F /tmp/diffs
