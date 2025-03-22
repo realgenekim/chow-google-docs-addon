@@ -5,7 +5,32 @@
  */
 function exportDocToMarkdown(docId) {
   try {
-    const doc = DocumentApp.openById(docId);
+    Logger.log('Attempting to open document with ID: ' + docId);
+    
+    // Try to access the document - may fail with permission error
+    let doc;
+    try {
+      doc = DocumentApp.openById(docId);
+    } catch (accessError) {
+      // Handle access errors specifically
+      if (accessError.toString().includes("403") || 
+          accessError.toString().includes("Access denied") ||
+          accessError.toString().includes("permission")) {
+        
+        const errorMessage = `# Access Error\n\nUnable to access document ${docId}\n\n` + 
+          "This document may not be shared with your Google account.\n\n" +
+          "To fix this issue:\n" +
+          "1. Make sure you're logged in with the correct Google account\n" +
+          "2. Ask the document owner to share it with your email address\n" +
+          "3. Open the document directly in Google Docs first to accept any sharing invitations";
+        
+        Logger.log('Permission error accessing document: ' + accessError);
+        return errorMessage;
+      }
+      // Re-throw other errors
+      throw accessError;
+    }
+    
     if (!doc) {
       Logger.log('Error: Could not open document with ID: ' + docId);
       return 'Error: Document not found';
@@ -33,7 +58,8 @@ function exportDocToMarkdown(docId) {
     return markdownText;
   } catch (error) {
     Logger.log('Error in exportDocToMarkdown: ' + error);
-    return 'Error: ' + error.toString();
+    return '# Error Accessing Document\n\n' + error.toString() + 
+      '\n\nPlease check that the document exists and you have permission to access it.';
   }
 }
 

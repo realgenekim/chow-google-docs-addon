@@ -164,19 +164,8 @@
         google.script.run
           .withSuccessHandler(function(promptText) {
             try {
-              // Use Navigator clipboard API which is more modern and reliable
-              if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(promptText)
-                  .then(() => {
-                    logMessage('Prompt copied to clipboard using Navigator API!');
-                  })
-                  .catch(err => {
-                    logMessage('Navigator clipboard API failed: ' + err);
-                    fallbackCopyToClipboard(promptText);
-                  });
-              } else {
-                fallbackCopyToClipboard(promptText);
-              }
+              // Try to copy with retry mechanism
+              copyWithRetry(promptText, 0);
             } catch (err) {
               logMessage('Failed to copy: ' + err);
             }
@@ -187,8 +176,101 @@
           .generatePromptAndCopyToClipboard();
       }
       
-      // Fallback copy method using execCommand
-      function fallbackCopyToClipboard(text) {
+      // Copy with retry logic - will try Navigator API first, then fallback, with 3 retries
+      function copyWithRetry(text, attemptCount, maxRetries = 3) {
+        logMessage(`🔄 Copy attempt ${attemptCount + 1}/${maxRetries + 1}...`);
+        
+        // Show brief feedback to user
+        showTemporaryStatus('Copying to clipboard...');
+        
+        // Use Navigator clipboard API which is more modern and reliable
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text)
+            .then(() => {
+              logMessage('✅ Prompt copied to clipboard using Navigator API!');
+              showTemporaryStatus('✅ Copied to clipboard!', 'success');
+            })
+            .catch(err => {
+              logMessage(`❌ Navigator API attempt ${attemptCount + 1} failed: ${err}`);
+              
+              if (attemptCount < maxRetries) {
+                showTemporaryStatus(`Retrying copy (${attemptCount + 2}/${maxRetries + 1})...`, 'warning');
+                
+                // Wait a bit before retrying (exponential backoff)
+                setTimeout(() => {
+                  copyWithRetry(text, attemptCount + 1, maxRetries);
+                }, 100 * Math.pow(2, attemptCount));
+              } else {
+                logMessage('Navigator API failed after all retries, trying fallback method...');
+                showTemporaryStatus('Trying alternative copy method...', 'warning');
+                
+                // Try fallback after all Navigator API retries fail
+                fallbackCopyToClipboard(text, 0);
+              }
+            });
+        } else {
+          // Browser doesn't support Navigator API, go straight to fallback
+          logMessage('Navigator clipboard API not available, using fallback method');
+          fallbackCopyToClipboard(text, 0);
+        }
+      }
+      
+      // Shows a temporary status message to the user
+      function showTemporaryStatus(message, type = 'info') {
+        // Create status element if it doesn't exist
+        var statusId = 'clipboard-status';
+        var statusEl = document.getElementById(statusId);
+        
+        if (!statusEl) {
+          statusEl = document.createElement('div');
+          statusEl.id = statusId;
+          statusEl.style.position = 'fixed';
+          statusEl.style.bottom = '10px';
+          statusEl.style.left = '50%';
+          statusEl.style.transform = 'translateX(-50%)';
+          statusEl.style.padding = '8px 16px';
+          statusEl.style.borderRadius = '4px';
+          statusEl.style.fontWeight = 'bold';
+          statusEl.style.zIndex = '2000';
+          statusEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+          document.body.appendChild(statusEl);
+        }
+        
+        // Set style based on type
+        switch(type) {
+          case 'success':
+            statusEl.style.backgroundColor = '#2ecc71';
+            statusEl.style.color = 'white';
+            break;
+          case 'warning':
+            statusEl.style.backgroundColor = '#f39c12';
+            statusEl.style.color = 'white';
+            break;
+          case 'error':
+            statusEl.style.backgroundColor = '#e74c3c';
+            statusEl.style.color = 'white';
+            break;
+          default: // info
+            statusEl.style.backgroundColor = '#3498db';
+            statusEl.style.color = 'white';
+        }
+        
+        statusEl.textContent = message;
+        statusEl.style.display = 'block';
+        
+        // Auto-hide after 3 seconds unless it's an error
+        if (type !== 'error') {
+          setTimeout(function() {
+            statusEl.style.display = 'none';
+          }, 3000);
+        }
+      }
+      
+      // Fallback copy method using execCommand with retries
+      function fallbackCopyToClipboard(text, attemptCount, maxRetries = 3) {
+        logMessage(`🔄 Fallback copy attempt ${attemptCount + 1}/${maxRetries + 1}...`);
+        showTemporaryStatus('Trying alternate copy method...', 'info');
+        
         try {
           var textArea = document.createElement('textarea');
           textArea.value = text;
@@ -209,56 +291,157 @@
           document.body.removeChild(textArea);
           
           if (successful) {
-            logMessage('Prompt copied to clipboard using fallback method!');
+            logMessage('✅ Prompt copied to clipboard using fallback method!');
+            showTemporaryStatus('✅ Copied to clipboard!', 'success');
           } else {
-            logMessage('Fallback clipboard copy failed');
-            showCopyPrompt(text);
+            logMessage(`❌ Fallback attempt ${attemptCount + 1} failed`);
+            
+            if (attemptCount < maxRetries) {
+              showTemporaryStatus(`Retrying alternate copy (${attemptCount + 2}/${maxRetries + 1})...`, 'warning');
+              
+              // Wait before retrying with exponential backoff
+              setTimeout(() => {
+                fallbackCopyToClipboard(text, attemptCount + 1, maxRetries);
+              }, 200 * Math.pow(2, attemptCount));
+            } else {
+              logMessage('❌ All fallback attempts failed, showing manual copy interface');
+              showTemporaryStatus('Automatic copy failed. Manual copy required.', 'error');
+              setTimeout(() => {
+                showCopyPrompt(text);
+              }, 500); // Slight delay before showing manual interface
+            }
           }
         } catch (err) {
-          logMessage('Fallback clipboard copy error: ' + err);
-          showCopyPrompt(text);
+          logMessage(`❌ Fallback attempt ${attemptCount + 1} error: ${err}`);
+          
+          if (attemptCount < maxRetries) {
+            showTemporaryStatus(`Retrying alternate copy (${attemptCount + 2}/${maxRetries + 1})...`, 'warning');
+            
+            // Wait before retrying with exponential backoff
+            setTimeout(() => {
+              fallbackCopyToClipboard(text, attemptCount + 1, maxRetries);
+            }, 200 * Math.pow(2, attemptCount));
+          } else {
+            logMessage('❌ All fallback attempts failed, showing manual copy interface');
+            showTemporaryStatus('Automatic copy failed. Manual copy required.', 'error');
+            setTimeout(() => {
+              showCopyPrompt(text);
+            }, 500); // Slight delay before showing manual interface
+          }
         }
       }
       
       // Last resort: show text for manual copy
       function showCopyPrompt(text) {
-        // Create a modal or display area for the user to manually copy
+        logMessage('⚠️ Showing manual copy interface as last resort');
+        
+        // Create a modal dialog
         var copyArea = document.createElement('div');
         copyArea.style.position = 'fixed';
-        copyArea.style.left = '10%';
-        copyArea.style.top = '10%';
-        copyArea.style.width = '80%';
-        copyArea.style.height = '60%';
+        copyArea.style.left = '5%';
+        copyArea.style.top = '5%';
+        copyArea.style.width = '90%';
+        copyArea.style.height = '90%';
         copyArea.style.backgroundColor = 'white';
         copyArea.style.zIndex = '1000';
         copyArea.style.padding = '20px';
-        copyArea.style.border = '1px solid black';
+        copyArea.style.border = '2px solid #e74c3c';
+        copyArea.style.borderRadius = '5px';
+        copyArea.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
         copyArea.style.overflow = 'auto';
         
+        // Create header
+        var header = document.createElement('h3');
+        header.innerText = 'Manual Copy Required';
+        header.style.color = '#e74c3c';
+        header.style.margin = '0 0 15px 0';
+        
+        // Create instructions
+        var instructions = document.createElement('p');
+        instructions.innerText = 'Automatic clipboard operations failed. Please use Ctrl+C (or ⌘+C on Mac) to manually copy this text:';
+        
+        // Create copy button
+        var copyButton = document.createElement('button');
+        copyButton.innerText = 'Try Copy Again';
+        copyButton.style.marginRight = '10px';
+        copyButton.style.padding = '5px 10px';
+        copyButton.style.backgroundColor = '#3498db';
+        copyButton.style.color = 'white';
+        copyButton.style.border = 'none';
+        copyButton.style.borderRadius = '3px';
+        copyButton.style.cursor = 'pointer';
+        copyButton.onclick = function() {
+          textDisplay.select();
+          try {
+            var success = document.execCommand('copy');
+            if (success) {
+              statusText.innerText = 'Copy successful!';
+              statusText.style.color = 'green';
+            } else {
+              statusText.innerText = 'Copy failed. Please use keyboard shortcut (Ctrl+C or ⌘+C).';
+              statusText.style.color = 'red';
+            }
+          } catch (err) {
+            statusText.innerText = 'Error: ' + err;
+            statusText.style.color = 'red';
+          }
+        };
+        
+        // Create close button
         var closeButton = document.createElement('button');
         closeButton.innerText = 'Close';
+        closeButton.style.padding = '5px 10px';
+        closeButton.style.backgroundColor = '#e74c3c';
+        closeButton.style.color = 'white';
+        closeButton.style.border = 'none';
+        closeButton.style.borderRadius = '3px';
+        closeButton.style.cursor = 'pointer';
         closeButton.onclick = function() {
           document.body.removeChild(copyArea);
         };
         
+        // Create status text
+        var statusText = document.createElement('span');
+        statusText.innerText = 'Ready to copy';
+        statusText.style.marginLeft = '10px';
+        
+        // Create textarea
         var textDisplay = document.createElement('textarea');
         textDisplay.value = text;
         textDisplay.style.width = '100%';
-        textDisplay.style.height = '80%';
+        textDisplay.style.height = '70%';
         textDisplay.style.marginTop = '10px';
+        textDisplay.style.marginBottom = '10px';
+        textDisplay.style.padding = '8px';
+        textDisplay.style.border = '1px solid #ccc';
+        textDisplay.style.borderRadius = '3px';
+        textDisplay.style.fontSize = '14px';
         
-        copyArea.appendChild(document.createTextNode('Automatic copying failed. Please manually copy this text:'));
-        copyArea.appendChild(document.createElement('br'));
+        // Button container
+        var buttonContainer = document.createElement('div');
+        buttonContainer.appendChild(copyButton);
+        buttonContainer.appendChild(closeButton);
+        buttonContainer.appendChild(statusText);
+        
+        // Build the modal
+        copyArea.appendChild(header);
+        copyArea.appendChild(instructions);
         copyArea.appendChild(textDisplay);
-        copyArea.appendChild(document.createElement('br'));
-        copyArea.appendChild(closeButton);
+        copyArea.appendChild(buttonContainer);
         
         document.body.appendChild(copyArea);
         
         // Select all text for easy copying
         textDisplay.select();
         
-        logMessage('Showing manual copy interface');
+        // Try to add keyboard shortcut focus listener
+        textDisplay.addEventListener('keydown', function(e) {
+          // Detect Ctrl+C or Cmd+C
+          if ((e.ctrlKey || e.metaKey) && e.keyCode === 67) {
+            statusText.innerText = 'Keyboard shortcut detected - copy likely successful!';
+            statusText.style.color = 'green';
+          }
+        });
       }
       
       // Get Part 1 document and generate prompt
@@ -266,16 +449,41 @@
         logMessage('Getting Part 1 document... (takes about 15s)');
         google.script.run
           .withSuccessHandler(function(content) {
-            // Calculate and display word count
-            var wordCount = content.trim().split(/\s+/).length;
-            document.getElementById('manuscript-context').innerHTML = 'Part 1 Word count: ' + wordCount;
-            logMessage('Part 1 loaded, generating prompt...');
-            
-            // Now generate and copy the prompt
-            generatePromptAndCopyToClipboard();
+            // Check for access errors
+            if (content.includes('Access Error') || content.includes('Error Accessing Document')) {
+              logMessage('⚠️ Document access error detected');
+              
+              // Show warning message in the manuscript context area
+              document.getElementById('manuscript-context').innerHTML = 
+                '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
+                '<strong>⚠️ Document Access Error</strong><br><br>' +
+                'Could not access the Part 1 document. This document may not be shared with your Google account.<br><br>' +
+                '<strong>To fix this issue:</strong><br>' +
+                '1. Make sure you\'re logged in with the correct Google account<br>' +
+                '2. Ask the document owner to share it with your email address<br>' +
+                '3. Open the document directly in Google Docs first to accept any sharing invitations<br><br>' +
+                '<em>Note: The prompt will still be generated using placeholder text for Part 1.</em>' +
+                '</div>';
+                
+              // Continue with prompt generation despite error
+              logMessage('Continuing with prompt generation using placeholder content...');
+              generatePromptAndCopyToClipboard();
+            } else {
+              // Normal flow - no errors
+              var wordCount = content.trim().split(/\s+/).length;
+              document.getElementById('manuscript-context').innerHTML = 'Part 1 Word count: ' + wordCount;
+              logMessage('Part 1 loaded, generating prompt...');
+              
+              // Generate and copy the prompt
+              generatePromptAndCopyToClipboard();
+            }
           })
           .withFailureHandler(function(error) {
             logMessage('Error: ' + error);
+            // Show error message
+            document.getElementById('manuscript-context').innerHTML = 
+              '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
+              '<strong>⚠️ Error</strong><br><br>' + error + '</div>';
           })
           .getPart1Doc();
       }
@@ -285,16 +493,41 @@
         logMessage('Getting Part 2 document... (takes about 15s)');
         google.script.run
           .withSuccessHandler(function(content) {
-            // Calculate and display word count
-            var wordCount = content.trim().split(/\s+/).length;
-            document.getElementById('manuscript-context').innerHTML = 'Part 2 Word count: ' + wordCount;
-            logMessage('Part 2 loaded, generating prompt...');
-            
-            // Now generate and copy the prompt
-            generatePromptAndCopyToClipboard();
+            // Check for access errors
+            if (content.includes('Access Error') || content.includes('Error Accessing Document')) {
+              logMessage('⚠️ Document access error detected');
+              
+              // Show warning message in the manuscript context area
+              document.getElementById('manuscript-context').innerHTML = 
+                '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
+                '<strong>⚠️ Document Access Error</strong><br><br>' +
+                'Could not access the Part 2 document. This document may not be shared with your Google account.<br><br>' +
+                '<strong>To fix this issue:</strong><br>' +
+                '1. Make sure you\'re logged in with the correct Google account<br>' +
+                '2. Ask the document owner to share it with your email address<br>' +
+                '3. Open the document directly in Google Docs first to accept any sharing invitations<br><br>' +
+                '<em>Note: The prompt will still be generated using the Part 1 summary and placeholder text for Part 2.</em>' +
+                '</div>';
+                
+              // Continue with prompt generation despite error
+              logMessage('Continuing with prompt generation using placeholder content...');
+              generatePromptAndCopyToClipboard();
+            } else {
+              // Normal flow - no errors
+              var wordCount = content.trim().split(/\s+/).length;
+              document.getElementById('manuscript-context').innerHTML = 'Part 2 Word count: ' + wordCount;
+              logMessage('Part 2 loaded, generating prompt...');
+              
+              // Generate and copy the prompt
+              generatePromptAndCopyToClipboard();
+            }
           })
           .withFailureHandler(function(error) {
             logMessage('Error: ' + error);
+            // Show error message
+            document.getElementById('manuscript-context').innerHTML = 
+              '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
+              '<strong>⚠️ Error</strong><br><br>' + error + '</div>';
           })
           .getPart2Doc();
       }
