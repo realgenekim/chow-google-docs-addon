@@ -4,3 +4,6 @@ gitadd:
 
 clasp-watch:
 	clasp push --watch
+
+diff:
+	git diff | llm -s "summarize the diff" > /tmp/diffs

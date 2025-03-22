@@ -60,11 +60,27 @@
       <button onclick="getPart1DocAndPrompt()">Part 1 Prompt to Clipboard</button>
       <button onclick="getPart2DocAndPrompt()">Part 2 Prompt to Clipboard</button>
     </div>
-    <div id="debug" style="margin-top: 20px; color: red;"></div>
+    <div id="debug" style="margin-top: 20px; color: red; max-height: 300px; overflow-y: auto;"></div>
 
     <script>
+      // Function to get formatted timestamp
+      function getTimestamp() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        return `${hours}:${minutes}:${seconds}`;
+      }
+      
+      // Function to log messages with timestamp, newest at top
+      function logMessage(message) {
+        const timestampedMessage = `${getTimestamp()} - ${message}`;
+        const debugElement = document.getElementById('debug');
+        debugElement.innerHTML = timestampedMessage + '<br>' + debugElement.innerHTML;
+      }
+      
       // Initialize debug output
-      document.getElementById('debug').innerHTML += '<br>BEGIN!';
+      logMessage('BEGIN!');
 
       // Load initial state when window loads
       window.onload = function() {
@@ -80,12 +96,12 @@
       // NOTE: getSelection() is reserved: will never be called.
       // Get the currently selected text from the document
       function getSelection2() {
-        document.getElementById('debug').innerHTML += '<br>getSelection called';
+        logMessage('getSelection called');
         google.script.run
           .withSuccessHandler(function(text) {
             // Update the UI with selected text
             const debugText = text.substring(0, 250) + (text.length > 250 ? '...' : '');
-            document.getElementById('debug').innerHTML += '<br>Success handler called with text: ' + debugText;
+            logMessage('Success handler called with text: ' + debugText);
             
             // Calculate word count
             const wordCount = text.trim().split(/\s+/).length;
@@ -103,30 +119,31 @@
             // Save selection to global variable on server
             google.script.run
               .withSuccessHandler(function() {
-                document.getElementById('debug').innerHTML += '<br>Selection saved to global variable';
+                logMessage('Selection saved to global variable');
               })
               .setGlobalSelection(text);
           })
           .withFailureHandler(function(error) {
-            document.getElementById('debug').innerHTML += '<br>Error: ' + error;
+            logMessage('Error: ' + error);
           })
           .getSelectedText();
       }
 
       // Load the document content
       function getDoc() {
-        document.getElementById('debug').innerHTML += '<br>getDoc called! (takes about 15s to load)';
+        logMessage('getDoc called! (takes about 15s to load)');
         google.script.run
           .withSuccessHandler(function(content) {
             // Calculate and display word count
             var wordCount = content.trim().split(/\s+/).length;
             document.getElementById('manuscript-context').innerHTML = 'Word count: ' + wordCount;
+            logMessage('Document loaded, word count: ' + wordCount);
           })
           .withFailureHandler(function(error) {
-            document.getElementById('debug').innerHTML += '<br>Error: ' + error;
+            logMessage('Error: ' + error);
           })
           .getDoc();
-        document.getElementById('debug').innerHTML += '<br>getDoc request sent, waiting for response...';
+        logMessage('getDoc request sent, waiting for response...');
       }
 
       // Reload the entire sidebar
@@ -143,7 +160,7 @@
 
       // Generate prompt and copy to clipboard
       function generatePromptAndCopyToClipboard() {
-        document.getElementById('debug').innerHTML += '<br>generatePromptAndCopyToClipboard called!';
+        logMessage('generatePromptAndCopyToClipboard called!');
         google.script.run
           .withSuccessHandler(function(promptText) {
             try {
@@ -151,21 +168,21 @@
               if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(promptText)
                   .then(() => {
-                    document.getElementById('debug').innerHTML += '<br>Prompt copied to clipboard using Navigator API!';
+                    logMessage('Prompt copied to clipboard using Navigator API!');
                   })
                   .catch(err => {
-                    document.getElementById('debug').innerHTML += '<br>Navigator clipboard API failed: ' + err;
+                    logMessage('Navigator clipboard API failed: ' + err);
                     fallbackCopyToClipboard(promptText);
                   });
               } else {
                 fallbackCopyToClipboard(promptText);
               }
             } catch (err) {
-              document.getElementById('debug').innerHTML += '<br>Failed to copy: ' + err;
+              logMessage('Failed to copy: ' + err);
             }
           })
           .withFailureHandler(function(error) {
-            document.getElementById('debug').innerHTML += '<br>Error generating prompt: ' + error;
+            logMessage('Error generating prompt: ' + error);
           })
           .generatePromptAndCopyToClipboard();
       }
@@ -192,13 +209,13 @@
           document.body.removeChild(textArea);
           
           if (successful) {
-            document.getElementById('debug').innerHTML += '<br>Prompt copied to clipboard using fallback method!';
+            logMessage('Prompt copied to clipboard using fallback method!');
           } else {
-            document.getElementById('debug').innerHTML += '<br>Fallback clipboard copy failed';
+            logMessage('Fallback clipboard copy failed');
             showCopyPrompt(text);
           }
         } catch (err) {
-          document.getElementById('debug').innerHTML += '<br>Fallback clipboard copy error: ' + err;
+          logMessage('Fallback clipboard copy error: ' + err);
           showCopyPrompt(text);
         }
       }
@@ -241,43 +258,43 @@
         // Select all text for easy copying
         textDisplay.select();
         
-        document.getElementById('debug').innerHTML += '<br>Showing manual copy interface';
+        logMessage('Showing manual copy interface');
       }
       
       // Get Part 1 document and generate prompt
       function getPart1DocAndPrompt() {
-        document.getElementById('debug').innerHTML += '<br>Getting Part 1 document... (takes about 15s)';
+        logMessage('Getting Part 1 document... (takes about 15s)');
         google.script.run
           .withSuccessHandler(function(content) {
             // Calculate and display word count
             var wordCount = content.trim().split(/\s+/).length;
             document.getElementById('manuscript-context').innerHTML = 'Part 1 Word count: ' + wordCount;
-            document.getElementById('debug').innerHTML += '<br>Part 1 loaded, generating prompt...';
+            logMessage('Part 1 loaded, generating prompt...');
             
             // Now generate and copy the prompt
             generatePromptAndCopyToClipboard();
           })
           .withFailureHandler(function(error) {
-            document.getElementById('debug').innerHTML += '<br>Error: ' + error;
+            logMessage('Error: ' + error);
           })
           .getPart1Doc();
       }
       
       // Get Part 2 document and generate prompt
       function getPart2DocAndPrompt() {
-        document.getElementById('debug').innerHTML += '<br>Getting Part 2 document... (takes about 15s)';
+        logMessage('Getting Part 2 document... (takes about 15s)');
         google.script.run
           .withSuccessHandler(function(content) {
             // Calculate and display word count
             var wordCount = content.trim().split(/\s+/).length;
             document.getElementById('manuscript-context').innerHTML = 'Part 2 Word count: ' + wordCount;
-            document.getElementById('debug').innerHTML += '<br>Part 2 loaded, generating prompt...';
+            logMessage('Part 2 loaded, generating prompt...');
             
             // Now generate and copy the prompt
             generatePromptAndCopyToClipboard();
           })
           .withFailureHandler(function(error) {
-            document.getElementById('debug').innerHTML += '<br>Error: ' + error;
+            logMessage('Error: ' + error);
           })
           .getPart2Doc();
       }
