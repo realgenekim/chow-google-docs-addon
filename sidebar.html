@@ -115,7 +115,7 @@
 
       // Load the document content
       function getDoc() {
-        document.getElementById('debug').innerHTML += '<br>getDoc called!';
+        document.getElementById('debug').innerHTML += '<br>getDoc called! (takes about 15s to load)';
         google.script.run
           .withSuccessHandler(function(content) {
             // Calculate and display word count
@@ -126,7 +126,7 @@
             document.getElementById('debug').innerHTML += '<br>Error: ' + error;
           })
           .getDoc();
-        document.getElementById('debug').innerHTML += '<br>getDoc returned (takes about 10s to finish loading)!';
+        document.getElementById('debug').innerHTML += '<br>getDoc request sent, waiting for response...';
       }
 
       // Reload the entire sidebar
@@ -176,10 +176,13 @@
           var textArea = document.createElement('textarea');
           textArea.value = text;
           
-          // Make the textarea out of viewport
+          // Make the textarea visible but off-screen - important for some browsers
           textArea.style.position = 'fixed';
-          textArea.style.left = '-999999px';
-          textArea.style.top = '-999999px';
+          textArea.style.left = '0';
+          textArea.style.top = '0';
+          textArea.style.width = '2em';
+          textArea.style.height = '2em';
+          textArea.style.opacity = '0.01'; // Almost invisible but not completely
           document.body.appendChild(textArea);
           
           textArea.focus();
@@ -243,7 +246,7 @@
       
       // Get Part 1 document and generate prompt
       function getPart1DocAndPrompt() {
-        document.getElementById('debug').innerHTML += '<br>Getting Part 1 document...';
+        document.getElementById('debug').innerHTML += '<br>Getting Part 1 document... (takes about 15s)';
         google.script.run
           .withSuccessHandler(function(content) {
             // Calculate and display word count
@@ -262,7 +265,7 @@
       
       // Get Part 2 document and generate prompt
       function getPart2DocAndPrompt() {
-        document.getElementById('debug').innerHTML += '<br>Getting Part 2 document...';
+        document.getElementById('debug').innerHTML += '<br>Getting Part 2 document... (takes about 15s)';
         google.script.run
           .withSuccessHandler(function(content) {
             // Calculate and display word count
