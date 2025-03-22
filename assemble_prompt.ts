@@ -206,8 +206,9 @@ function assemblePrompt(manuscript: string, currentSection: string): PromptSecti
   console.log('manuscript (first 250 chars):', manuscript.substring(0, 250));
   console.log('currentSection (first 250 chars):', currentSection.substring(0, 250));
   
-  // Check if this is Part 2 content
+  // Check what part we're dealing with
   const isPart2 = manuscript.startsWith('# Part 2');
+  const isPart3 = manuscript.startsWith('# Part 3');
   
   // Create base prompt sections
   const promptSections = [
@@ -215,11 +216,18 @@ function assemblePrompt(manuscript: string, currentSection: string): PromptSecti
     { "your-task": YOUR_TASK_TEXT }
   ];
   
-  // Handle Part 2 differently - add part1-summary as a separate field
+  // Handle each part differently
   if (isPart2) {
+    // For Part 2 - include Part 1 summary
     promptSections.push({ "part1-summary": PART1_SUMMARY });
     promptSections.push({ "manuscript-context": manuscript });
+  } else if (isPart3) {
+    // For Part 3 - include both Part 1 and Part 2 summaries
+    promptSections.push({ "part1-summary": PART1_SUMMARY });
+    promptSections.push({ "part2-summary": PART2_SUMMARY });
+    promptSections.push({ "manuscript-context": manuscript });
   } else {
+    // For Part 1 or any other content - standard approach
     promptSections.push({ "manuscript-context": manuscript });
   }
   
@@ -279,6 +287,46 @@ function testAssemblePrompt(): void {
   // Check manuscript-context contains only Part 2 content
   if (resultPart2[3]["manuscript-context"] !== testPart2Manuscript) {
     Logger.log("Error: Manuscript context should contain only Part 2 content");
+    return;
+  }
+  
+  // Test with Part 3 content
+  const testPart3Manuscript = "# Part 3\n\nSome part 3 content";
+  
+  const resultPart3 = assemblePrompt(testPart3Manuscript, testSection);
+  Logger.log("Test result (Part 3 content): " + JSON.stringify(resultPart3, null, 2));
+  
+  // Validate Part 3 handling - should have 6 sections with both part1-summary and part2-summary
+  if (resultPart3.length !== 6) {
+    Logger.log("Error: Expected 6 sections in Part 3 prompt, got " + resultPart3.length);
+    return;
+  }
+  
+  // Check for part1-summary field
+  if (!resultPart3[2]["part1-summary"]) {
+    Logger.log("Error: No part1-summary field found in Part 3 prompt");
+    return;
+  }
+  
+  // Check for part2-summary field
+  if (!resultPart3[3]["part2-summary"]) {
+    Logger.log("Error: No part2-summary field found in Part 3 prompt");
+    return;
+  }
+  
+  if (resultPart3[2]["part1-summary"] !== PART1_SUMMARY) {
+    Logger.log("Error: Part 1 summary content mismatch in Part 3 prompt");
+    return;
+  }
+  
+  if (resultPart3[3]["part2-summary"] !== PART2_SUMMARY) {
+    Logger.log("Error: Part 2 summary content mismatch in Part 3 prompt");
+    return;
+  }
+  
+  // Check manuscript-context contains only Part 3 content
+  if (resultPart3[4]["manuscript-context"] !== testPart3Manuscript) {
+    Logger.log("Error: Manuscript context should contain only Part 3 content");
     return;
   }
   

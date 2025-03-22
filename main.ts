@@ -177,12 +177,40 @@ Note: Using placeholder content for Part 2. The actual document could not be acc
   }
 }
 
+/**
+ * Fetches only Part 3 markdown.
+ * @return {string} Markdown text from Part 3 document.
+ */
+function getPart3Doc() {
+  try {
+    // Get markdown for Part 3 with retry logic
+    const part3Markdown = retryOperation(() => exportDocToMarkdown(DOC_ID_PART3), 3);
+    
+    // log the word count
+    const getWordCount = (text: string): number => text.trim().split(/\s+/).length;
+    Logger.log(`Part 3 word count: ${getWordCount(part3Markdown)}`);
+    
+    const formattedMarkdown = "# Part 3\n\n" + part3Markdown;
+    
+    Logger.log("Part 3 manuscript markdown generated successfully");
+    globalContentBook = formattedMarkdown;
+    
+    // Persist to properties
+    PropertiesService.getUserProperties().setProperty('globalContentBook', globalContentBook);
+    return globalContentBook;
+  } catch (error) {
+    Logger.log('Error in getPart3Doc: ' + error);
+    return 'Error generating Part 3 markdown: ' + error.toString();
+  }
+}
+
 
 /**
  * Document IDs for manuscript parts
  */
 const DOC_ID_PART1 = "1Kk4ryuJicTOteqJ4IP9IfocQyTnZ6TIkTQviupB91c4";
 const DOC_ID_PART2 = "15e3EIbRqtJOZWUtPwTZG9zjTpoCQ5b1VFtNl8KZS_Lo";
+const DOC_ID_PART3 = "1t2VE9Nxc98fq5IPgtv4T0HpvJ-tHpukrpZ0tXlgBDQk"; // Add the real document ID for Part 3
 
 /**
  * Fetches and combines markdown from two specific document parts.

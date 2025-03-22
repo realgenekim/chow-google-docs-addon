@@ -59,6 +59,7 @@
     <div style="margin-top: 10px;">
       <button onclick="getPart1DocAndPrompt()">Part 1 Prompt to Clipboard</button>
       <button onclick="getPart2DocAndPrompt()">Part 2 Prompt to Clipboard</button>
+      <button onclick="getPart3DocAndPrompt()">Part 3 Prompt to Clipboard</button>
     </div>
     <div id="debug" style="margin-top: 20px; color: red; max-height: 300px; overflow-y: auto;"></div>
 
@@ -90,8 +91,10 @@
       // Global cache variables for document content
       let cachedPart1Content = null;
       let cachedPart2Content = null;
+      let cachedPart3Content = null;
       let lastPart1LoadTime = 0;
       let lastPart2LoadTime = 0;
+      let lastPart3LoadTime = 0;
       const CACHE_EXPIRY_MS = 60000; // 1 minute
       
       // Initialize by loading document and selection
@@ -110,20 +113,26 @@
         }, CACHE_EXPIRY_MS);
       }
       
-      // Load both documents in background
+      // Load all documents in background
       function loadDocumentCache() {
         const now = Date.now();
         
         // Check if we need to refresh Part 1
         if (!cachedPart1Content || (now - lastPart1LoadTime > CACHE_EXPIRY_MS)) {
-          logMessage('Pre-loading Part 1 document in background...');
+          logMessage('Preloading Part 1 document...');
           loadPart1InBackground();
         }
         
         // Check if we need to refresh Part 2
         if (!cachedPart2Content || (now - lastPart2LoadTime > CACHE_EXPIRY_MS)) {
-          logMessage('Pre-loading Part 2 document in background...');
+          logMessage('Preloading Part 2 document...');
           loadPart2InBackground();
+        }
+        
+        // Check if we need to refresh Part 3
+        if (!cachedPart3Content || (now - lastPart3LoadTime > CACHE_EXPIRY_MS)) {
+          logMessage('Preloading Part 3 document...');
+          loadPart3InBackground();
         }
       }
       
@@ -159,6 +168,23 @@
             logMessage(`❌ Failed to cache Part 2: ${error}`);
           })
           .getPart2Doc();
+      }
+      
+      // Load Part 3 in background
+      function loadPart3InBackground() {
+        google.script.run
+          .withSuccessHandler(function(content) {
+            cachedPart3Content = content;
+            lastPart3LoadTime = Date.now();
+            
+            // Calculate word count
+            const wordCount = content.trim().split(/\s+/).length;
+            logMessage(`✅ Part 3 document cached (${wordCount} words)`);
+          })
+          .withFailureHandler(function(error) {
+            logMessage(`❌ Failed to cache Part 3: ${error}`);
+          })
+          .getPart3Doc();
       }
 
       // NOTE: getSelection() is reserved: will never be called.
@@ -238,6 +264,15 @@
           summaryHTML += '<strong>Part 2:</strong> Not cached yet<br>';
         }
         
+        // Part 3 summary
+        if (cachedPart3Content) {
+          const part3WordCount = cachedPart3Content.trim().split(/\s+/).length;
+          const part3Age = Math.round((Date.now() - lastPart3LoadTime) / 1000);
+          summaryHTML += `<strong>Part 3:</strong> ${part3WordCount} words (cached ${part3Age}s ago)<br>`;
+        } else {
+          summaryHTML += '<strong>Part 3:</strong> Not cached yet<br>';
+        }
+        
         summaryHTML += '</div>';
         
         // Display in the manuscript context area
@@ -264,15 +299,16 @@
         // Reset timestamps to force refresh
         lastPart1LoadTime = 0;
         lastPart2LoadTime = 0;
+        lastPart3LoadTime = 0;
         
         // Show loading indicators
         document.getElementById('manuscript-context').innerHTML = 
           '<div style="padding: 10px; background-color: #f8f9fa; border-radius: 4px; text-align: center;">' +
           '<strong>Refreshing document cache...</strong><br>' +
-          '<div style="margin-top: 10px;">Loading Part 1 and Part 2 documents...</div>' +
+          '<div style="margin-top: 10px;">Loading Part 1, Part 2, and Part 3 documents...</div>' +
           '</div>';
         
-        // Load both documents
+        // Load all documents
         loadDocumentCache();
         
         // After a delay, show the summary
@@ -749,6 +785,100 @@
           var wordCount = content.trim().split(/\s+/).length;
           document.getElementById('manuscript-context').innerHTML = 'Part 2 Word count: ' + wordCount;
           logMessage('Part 2 ready, generating prompt...');
+          
+          // Generate and copy the prompt
+          generatePromptAndCopyToClipboard();
+        }
+      }
+      
+      // Get Part 3 document and generate prompt
+      function getPart3DocAndPrompt() {
+        logMessage('Getting Part 3 document...');
+        
+        // First get the latest selection, then use cached document or load if needed
+        logMessage('Updating selected text first...');
+        getSelectionThenUsePart3();
+      }
+      
+      // Helper function to get selection before using Part 3
+      function getSelectionThenUsePart3() {
+        google.script.run
+          .withSuccessHandler(function(selectedText) {
+            // Log selection status
+            if (selectedText && selectedText.trim() !== '' && selectedText !== 'No text selected') {
+              const wordCount = selectedText.trim().split(/\s+/).length;
+              logMessage(`Selection updated: ${wordCount} words`);
+            } else {
+              logMessage('⚠️ No text currently selected');
+            }
+            
+            // Now proceed with Part 3 - use cached version if available
+            useCachedOrLoadPart3();
+          })
+          .withFailureHandler(function(error) {
+            logMessage('Error getting selection: ' + error);
+            // Still proceed with using Part 3
+            useCachedOrLoadPart3();
+          })
+          .getSelectedText();
+      }
+      
+      // Helper function to use cached Part 3 or load if needed
+      function useCachedOrLoadPart3() {
+        // Check if we have a valid cache
+        const now = Date.now();
+        if (cachedPart3Content && (now - lastPart3LoadTime <= CACHE_EXPIRY_MS)) {
+          logMessage('✅ Using cached Part 3 document (fast)');
+          processPart3Content(cachedPart3Content);
+        } else {
+          // Cache is invalid or missing, need to load
+          logMessage('Cache expired or missing, loading Part 3 document (takes about 15s)...');
+          google.script.run
+            .withSuccessHandler(function(content) {
+              // Update cache
+              cachedPart3Content = content;
+              lastPart3LoadTime = Date.now();
+              
+              // Process the content
+              processPart3Content(content);
+            })
+            .withFailureHandler(function(error) {
+              logMessage('Error: ' + error);
+              // Show error message
+              document.getElementById('manuscript-context').innerHTML = 
+                '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
+                '<strong>⚠️ Error</strong><br><br>' + error + '</div>';
+            })
+            .getPart3Doc();
+        }
+      }
+      
+      // Process the Part 3 content
+      function processPart3Content(content) {
+        // Check for access errors
+        if (content.includes('Access Error') || content.includes('Error Accessing Document')) {
+          logMessage('⚠️ Document access error detected');
+          
+          // Show warning message in the manuscript context area
+          document.getElementById('manuscript-context').innerHTML = 
+            '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
+            '<strong>⚠️ Document Access Error</strong><br><br>' +
+            'Could not access the Part 3 document. This document may not be shared with your Google account.<br><br>' +
+            '<strong>To fix this issue:</strong><br>' +
+            '1. Make sure you\'re logged in with the correct Google account<br>' +
+            '2. Ask the document owner to share it with your email address<br>' +
+            '3. Open the document directly in Google Docs first to accept any sharing invitations<br><br>' +
+            '<em>Note: The prompt will still be generated using Part 2 summary and placeholder text for Part 3.</em>' +
+            '</div>';
+            
+          // Continue with prompt generation despite error
+          logMessage('Continuing with prompt generation using placeholder content...');
+          generatePromptAndCopyToClipboard();
+        } else {
+          // Normal flow - no errors
+          var wordCount = content.trim().split(/\s+/).length;
+          document.getElementById('manuscript-context').innerHTML = 'Part 3 Word count: ' + wordCount;
+          logMessage('Part 3 ready, generating prompt...');
           
           // Generate and copy the prompt
           generatePromptAndCopyToClipboard();
