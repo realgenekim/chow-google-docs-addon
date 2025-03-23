@@ -249,6 +249,27 @@ const DOC_ID_PART2 = "15e3EIbRqtJOZWUtPwTZG9zjTpoCQ5b1VFtNl8KZS_Lo";
 const DOC_ID_PART3 = "1t2VE9Nxc98fq5IPgtv4T0HpvJ-tHpukrpZ0tXlgBDQk"; // Add the real document ID for Part 3
 
 /**
+ * Gets information about the active document
+ * @return {Object} Document information with title and id
+ */
+function getActiveDocumentInfo() {
+  try {
+    const doc = DocumentApp.getActiveDocument();
+    if (!doc) {
+      return { title: "", id: "" };
+    }
+    
+    return {
+      title: doc.getName(),
+      id: doc.getId()
+    };
+  } catch (error) {
+    Logger.log('Error getting active document info: ' + error);
+    return { title: "", id: "", error: error.toString() };
+  }
+}
+
+/**
  * Fetches and combines markdown from two specific document parts.
  * @return {string} Combined markdown text from both documents.
  */
