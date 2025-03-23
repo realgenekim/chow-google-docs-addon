@@ -170,7 +170,7 @@
       let lastPart1LoadTime = 0;
       let lastPart2LoadTime = 0;
       let lastPart3LoadTime = 0;
-      const CACHE_EXPIRY_MS = 60000; // 1 minute
+      const CACHE_EXPIRY_MS = (5 * 60000); // 1 minute
       
       // Get build date for title
       const BUILD_DATE = new Date();
@@ -978,9 +978,12 @@
         } else {
           // Normal flow - no errors
           var wordCount = content.trim().split(/\s+/).length;
-          document.getElementById('manuscript-context').innerHTML = 'Part 1 Word count: ' + wordCount;
+          
+          // Always show the cache summary table instead of replacing it
+          showCachedDocsSummary();
+          
           const selectedPrompt = getSelectedPromptOption();
-          logMessage(`Part 1 ready, generating prompt with option "${selectedPrompt}"...`);
+          logMessage(`Part 1 ready (${wordCount} words), generating prompt with option "${selectedPrompt}"...`);
           
           // Generate and copy the prompt
           generatePromptAndCopyToClipboard();
@@ -1100,13 +1103,12 @@
         } else {
           // Normal flow - no errors
           var wordCount = content.trim().split(/\s+/).length;
-          document.getElementById('manuscript-context').innerHTML = 
-            `<div style="padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
-              <strong>Part 2:</strong> ${wordCount} words<br>
-              <em>Note: Using PART1_SUMMARY constant instead of loading Part 1 document</em>
-            </div>`;
+          
+          // Always show the cache summary table instead of replacing it
+          showCachedDocsSummary();
+          
           const selectedPrompt = getSelectedPromptOption();
-          logMessage(`Part 2 ready, generating prompt with PART1_SUMMARY and option "${selectedPrompt}"...`);
+          logMessage(`Part 2 ready (${wordCount} words), generating prompt with PART1_SUMMARY and option "${selectedPrompt}"...`);
           
           // Generate and copy the prompt
           generatePromptAndCopyToClipboard();
@@ -1207,18 +1209,24 @@
         if (content.includes('Access Error') || content.includes('Error Accessing Document')) {
           logMessage('⚠️ Document access error detected');
           
-          // Show warning message in the manuscript context area
-          document.getElementById('manuscript-context').innerHTML = 
-            '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
+          // Show the cache summary table first
+          showCachedDocsSummary();
+          
+          // Create and append warning div after the table
+          const errorDiv = document.createElement('div');
+          errorDiv.style.cssText = 'color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c; margin-top: 10px;';
+          errorDiv.innerHTML = 
             '<strong>⚠️ Document Access Error</strong><br><br>' +
             'Could not access the Part 3 document. This document may not be shared with your Google account.<br><br>' +
             '<strong>To fix this issue:</strong><br>' +
             '1. Make sure you\'re logged in with the correct Google account<br>' +
             '2. Ask the document owner to share it with your email address<br>' +
             '3. Open the document directly in Google Docs first to accept any sharing invitations<br><br>' +
-            '<em>Note: The prompt will still be generated using Part 2 summary and placeholder text for Part 3.</em>' +
-            '</div>';
-            
+            '<em>Note: The prompt will still be generated using Part 2 summary and placeholder text for Part 3.</em>';
+          
+          // Append error message after the table
+          document.getElementById('manuscript-context').appendChild(errorDiv);
+          
           // Continue with prompt generation despite error
           const selectedPrompt = getSelectedPromptOption();
           logMessage(`Continuing with prompt generation using placeholder content and option "${selectedPrompt}"...`);
@@ -1230,9 +1238,10 @@
           const wordCountMatch = content.match(/Only (\d+) words were loaded/);
           const wordCount = wordCountMatch ? wordCountMatch[1] : 'unknown';
           
-          // Show warning message in the manuscript context area
-          document.getElementById('manuscript-context').innerHTML = 
-            '<div style="color: #e67e22; background-color: #fef9e7; padding: 10px; border-radius: 4px; border: 1px solid #e67e22;">' +
+          // Show warning message in the manuscript context area with append to preserve table
+          const warningDiv = document.createElement('div');
+          warningDiv.style.cssText = 'color: #e67e22; background-color: #fef9e7; padding: 10px; border-radius: 4px; border: 1px solid #e67e22; margin-top: 10px;';
+          warningDiv.innerHTML = 
             '<strong>⚠️ Incomplete Document Warning</strong><br><br>' +
             `Only ${wordCount} words were loaded for Part 3, but it should be ~11,000 words.<br><br>` +
             '<strong>Possible causes:</strong><br>' +
@@ -1240,8 +1249,13 @@
             '2. You may not have proper access to the document<br>' +
             '3. The document may be empty or contain limited content<br>' +
             '4. There may be a technical issue with the document export<br><br>' +
-            '<em>Note: The prompt will still be generated, but may not contain complete Part 3 content.</em>' +
-            '</div>';
+            '<em>Note: The prompt will still be generated, but may not contain complete Part 3 content.</em>';
+            
+          // Show the table
+          showCachedDocsSummary();
+          
+          // Append the warning after the table
+          document.getElementById('manuscript-context').appendChild(warningDiv);
             
           // Continue with prompt generation despite warning
           const selectedPrompt = getSelectedPromptOption();
@@ -1253,20 +1267,25 @@
           
           // Check if content seems suspiciously short but didn't trigger the warning
           if (wordCount < 1000) {
-            document.getElementById('manuscript-context').innerHTML = 
-              `<div style="padding: 10px; background-color: #fef9e7; border-radius: 4px; border: 1px solid #e67e22;">
-                <strong>⚠️ Part 3:</strong> Only ${wordCount} words loaded (expected ~11,000 words)<br>
-                The document appears to be incomplete. The prompt may not contain all necessary content.
-              </div>`;
+            // Show the table first
+            showCachedDocsSummary();
+            
+            // Add warning message after the table
+            const warningDiv = document.createElement('div');
+            warningDiv.style.cssText = 'color: #e67e22; background-color: #fef9e7; padding: 10px; border-radius: 4px; border: 1px solid #e67e22; margin-top: 10px;';
+            warningDiv.innerHTML = 
+              '<strong>⚠️ Part 3 Warning:</strong> Only ' + wordCount + ' words loaded (expected ~11,000 words)<br>' +
+              'The document appears to be incomplete. The prompt may not contain all necessary content.';
+            document.getElementById('manuscript-context').appendChild(warningDiv);
+            
             const selectedPrompt = getSelectedPromptOption();
             logMessage(`⚠️ Part 3 content suspiciously short (${wordCount} words) but proceeding with option "${selectedPrompt}"...`);
           } else {
-            document.getElementById('manuscript-context').innerHTML = 
-              `<div style="padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
-                <strong>Part 3:</strong> ${wordCount} words
-              </div>`;
+            // Show the table with no warnings
+            showCachedDocsSummary();
+            
             const selectedPrompt = getSelectedPromptOption();
-            logMessage(`Part 3 ready, generating prompt (${wordCount} words) with option "${selectedPrompt}"...`);
+            logMessage(`Part 3 ready (${wordCount} words), generating prompt with option "${selectedPrompt}"...`);
           }
           
           // Generate and copy the prompt

@@ -224,7 +224,9 @@ const PROMPTS = [
 
     We're going to work on "section-to-be-worked-on".  Put this into the Artifacts window unchanged.
 
-    In the chat window, critique it, and then generate options for this text in the chat session.
+    In the chat window, critique it, and then generate three options for this text in the chat session.
+
+    Remember, when you output the options in Chat, don't put it in Markdown in code block; just put in the Chat window.
     `
   }
 ]
