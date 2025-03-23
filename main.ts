@@ -34,8 +34,8 @@ function triggerSidebarReload() {
 function showSidebar() {
 
   var timestamp = new Date().getTime(); // Cache-busting timestamp
-  var html = HtmlService.createHtmlOutputFromFile('Sidebar')
-      .setTitle("My Add-on")
+  var html = HtmlService.createHtmlOutputFromFile('sidebar')
+      .setTitle("CHOW Workbench")
       .setSandboxMode(HtmlService.SandboxMode.IFRAME);
   
   // Inject JavaScript to reload only if code has changed
@@ -60,7 +60,7 @@ function showAlert() {
 
 function showSidebar() {
   var html = HtmlService.createHtmlOutputFromFile('sidebar')
-      .setTitle("My Add-on");
+      .setTitle("CHOW Workbench");
   DocumentApp.getUi().showSidebar(html);
 }
 
