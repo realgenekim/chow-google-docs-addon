@@ -117,6 +117,9 @@
       function loadDocumentCache() {
         const now = Date.now();
         
+        // Note: For Part 2, we don't need to load Part 1 document since we use the PART1_SUMMARY constant
+        // But we'll still preload Part 1 for Part 1 prompts and for completeness
+        
         // Check if we need to refresh Part 1
         if (!cachedPart1Content || (now - lastPart1LoadTime > CACHE_EXPIRY_MS)) {
           logMessage('Preloading Part 1 document...');
@@ -647,8 +650,19 @@
               logMessage('⚠️ No text currently selected');
             }
             
-            // Now proceed with Part 1 - use cached version if available
-            useCachedOrLoadPart1();
+            // Save selection to global variable on server (even if empty)
+            google.script.run
+              .withSuccessHandler(function() {
+                logMessage('Selection saved to global variable for Part 1 prompt');
+                // Now proceed with Part 1 - use cached version if available
+                useCachedOrLoadPart1();
+              })
+              .withFailureHandler(function(error) {
+                logMessage('Error saving selection: ' + error);
+                // Still proceed with Part 1
+                useCachedOrLoadPart1();
+              })
+              .setGlobalSelection(selectedText);
           })
           .withFailureHandler(function(error) {
             logMessage('Error getting selection: ' + error);
@@ -722,7 +736,7 @@
       
       // Get Part 2 document and generate prompt
       function getPart2DocAndPrompt() {
-        logMessage('Getting Part 2 document...');
+        logMessage('Getting Part 2 document (using PART1_SUMMARY constant instead of loading Part 1)...');
         
         // First get the latest selection, then use cached document or load if needed
         logMessage('Updating selected text first...');
@@ -741,8 +755,19 @@
               logMessage('⚠️ No text currently selected');
             }
             
-            // Now proceed with Part 2 - use cached version if available
-            useCachedOrLoadPart2();
+            // Save selection to global variable on server (even if empty)
+            google.script.run
+              .withSuccessHandler(function() {
+                logMessage('Selection saved to global variable for Part 2 prompt');
+                // Now proceed with Part 2 - use cached version if available
+                useCachedOrLoadPart2();
+              })
+              .withFailureHandler(function(error) {
+                logMessage('Error saving selection: ' + error);
+                // Still proceed with Part 2
+                useCachedOrLoadPart2();
+              })
+              .setGlobalSelection(selectedText);
           })
           .withFailureHandler(function(error) {
             logMessage('Error getting selection: ' + error);
@@ -806,8 +831,12 @@
         } else {
           // Normal flow - no errors
           var wordCount = content.trim().split(/\s+/).length;
-          document.getElementById('manuscript-context').innerHTML = 'Part 2 Word count: ' + wordCount;
-          logMessage('Part 2 ready, generating prompt...');
+          document.getElementById('manuscript-context').innerHTML = 
+            `<div style="padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
+              <strong>Part 2:</strong> ${wordCount} words<br>
+              <em>Note: Using PART1_SUMMARY constant instead of loading Part 1 document</em>
+            </div>`;
+          logMessage('Part 2 ready, generating prompt with PART1_SUMMARY...');
           
           // Generate and copy the prompt
           generatePromptAndCopyToClipboard();
@@ -835,8 +864,19 @@
               logMessage('⚠️ No text currently selected');
             }
             
-            // Now proceed with Part 3 - use cached version if available
-            useCachedOrLoadPart3();
+            // Save selection to global variable on server (even if empty)
+            google.script.run
+              .withSuccessHandler(function() {
+                logMessage('Selection saved to global variable for Part 3 prompt');
+                // Now proceed with Part 3 - use cached version if available
+                useCachedOrLoadPart3();
+              })
+              .withFailureHandler(function(error) {
+                logMessage('Error saving selection: ' + error);
+                // Still proceed with Part 3
+                useCachedOrLoadPart3();
+              })
+              .setGlobalSelection(selectedText);
           })
           .withFailureHandler(function(error) {
             logMessage('Error getting selection: ' + error);

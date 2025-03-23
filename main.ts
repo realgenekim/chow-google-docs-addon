@@ -98,14 +98,22 @@ function generatePromptAndCopyToClipboard() {
   const prompt = assemblePrompt(globalContentBook, globalSelection);
   const result = JSON.stringify(prompt, null, 2); // Returns formatted JSON string
   
-  // Log what mode we're using (full content or with Part 1 summary)
+  // Log what mode we're using (full content or with Part 1/Part 2 summary)
   const isPart2 = globalContentBook.startsWith('# Part 2');
+  const isPart3 = globalContentBook.startsWith('# Part 3');
+  
   if (isPart2) {
-    Logger.log('Generated prompt for Part 2 with separate part1-summary field');
+    Logger.log('Generated prompt for Part 2 with PART1_SUMMARY constant (no need to load Part 1 document)');
     // Calculate sizes for comparison
     const fullSize = result.length;
     const part1SummarySize = PART1_SUMMARY.length;
-    Logger.log(`Using summary saves approximately ${Math.round((1 - part1SummarySize/30000) * 100)}% of context window compared to full Part 1`);
+    Logger.log(`Using PART1_SUMMARY saves approximately ${Math.round((1 - part1SummarySize/30000) * 100)}% of context window compared to full Part 1`);
+  } else if (isPart3) {
+    Logger.log('Generated prompt for Part 3 with both PART1_SUMMARY and PART2_SUMMARY constants');
+    // Calculate sizes for comparison
+    const part1SummarySize = PART1_SUMMARY.length;
+    const part2SummarySize = PART2_SUMMARY.length;
+    Logger.log(`Using summaries saves significant context window space compared to full documents`);
   } else {
     Logger.log('Generated prompt with full manuscript content');
   }

@@ -216,23 +216,21 @@ function assemblePrompt(manuscript: string, currentSection: string): PromptSecti
     { "your-task": YOUR_TASK_TEXT }
   ];
   
-  // Handle each part differently
+  // Include the summaries for Part 2 and Part 3
   if (isPart2) {
     // For Part 2 - include Part 1 summary
     promptSections.push({ "part1-summary": PART1_SUMMARY });
-    promptSections.push({ "manuscript-context": manuscript });
   } else if (isPart3) {
     // For Part 3 - include both Part 1 and Part 2 summaries
     promptSections.push({ "part1-summary": PART1_SUMMARY });
     promptSections.push({ "part2-summary": PART2_SUMMARY });
-    promptSections.push({ "manuscript-context": manuscript });
-  } else {
-    // For Part 1 or any other content - standard approach
-    promptSections.push({ "manuscript-context": manuscript });
   }
   
-  // Always add the section to be worked on
+  // Add the section to be worked on BEFORE the manuscript context
   promptSections.push({ "section-to-be-worked-on": currentSection });
+  
+  // Finally add the manuscript context
+  promptSections.push({ "manuscript-context": manuscript });
   
   return promptSections;
 }
@@ -251,13 +249,14 @@ function testAssemblePrompt(): void {
     return;
   }
   
-  if (result[2]["manuscript-context"] !== testManuscript) {
-    Logger.log("Error: Manuscript content mismatch for regular content");
+  // Now section-to-be-worked-on should be at index 2, and manuscript-context at index 3
+  if (result[2]["section-to-be-worked-on"] !== testSection) {
+    Logger.log("Error: Section to be worked on should be at index 2");
     return;
   }
   
-  if (result[3]["section-to-be-worked-on"] !== testSection) {
-    Logger.log("Error: Section content mismatch");
+  if (result[3]["manuscript-context"] !== testManuscript) {
+    Logger.log("Error: Manuscript context should be at index 3");
     return;
   }
   
@@ -273,7 +272,7 @@ function testAssemblePrompt(): void {
     return;
   }
   
-  // Check for part1-summary field
+  // Check for part1-summary field at index 2
   if (!resultPart2[2]["part1-summary"]) {
     Logger.log("Error: No part1-summary field found in Part 2 prompt");
     return;
@@ -284,9 +283,15 @@ function testAssemblePrompt(): void {
     return;
   }
   
-  // Check manuscript-context contains only Part 2 content
-  if (resultPart2[3]["manuscript-context"] !== testPart2Manuscript) {
-    Logger.log("Error: Manuscript context should contain only Part 2 content");
+  // Check section-to-be-worked-on at index 3
+  if (resultPart2[3]["section-to-be-worked-on"] !== testSection) {
+    Logger.log("Error: Section to be worked on should be at index 3 for Part 2");
+    return;
+  }
+  
+  // Check manuscript-context at index 4
+  if (resultPart2[4]["manuscript-context"] !== testPart2Manuscript) {
+    Logger.log("Error: Manuscript context should be at index 4 for Part 2");
     return;
   }
   
@@ -302,13 +307,13 @@ function testAssemblePrompt(): void {
     return;
   }
   
-  // Check for part1-summary field
+  // Check for part1-summary field at index 2
   if (!resultPart3[2]["part1-summary"]) {
     Logger.log("Error: No part1-summary field found in Part 3 prompt");
     return;
   }
   
-  // Check for part2-summary field
+  // Check for part2-summary field at index 3
   if (!resultPart3[3]["part2-summary"]) {
     Logger.log("Error: No part2-summary field found in Part 3 prompt");
     return;
@@ -324,9 +329,15 @@ function testAssemblePrompt(): void {
     return;
   }
   
-  // Check manuscript-context contains only Part 3 content
-  if (resultPart3[4]["manuscript-context"] !== testPart3Manuscript) {
-    Logger.log("Error: Manuscript context should contain only Part 3 content");
+  // Check section-to-be-worked-on at index 4
+  if (resultPart3[4]["section-to-be-worked-on"] !== testSection) {
+    Logger.log("Error: Section to be worked on should be at index 4 for Part 3");
+    return;
+  }
+  
+  // Check manuscript-context at index 5
+  if (resultPart3[5]["manuscript-context"] !== testPart3Manuscript) {
+    Logger.log("Error: Manuscript context should be at index 5 for Part 3");
     return;
   }
   
