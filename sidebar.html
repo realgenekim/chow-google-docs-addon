@@ -29,9 +29,25 @@
   </head>
   <body>
     <!-- Main title and description -->
-    <h3>CHOW Workbench 6</h3>
+    <h3>CHOW Workbench</h3>
+    <div style="font-size: 11px; margin-top: -5px; margin-bottom: 8px;">Build: <span id="build-date"></span></div>
     <p>Written to make it easier to CHOW: assemble and sling prompts around to paste them into an LLM.</p>
     <br>
+    
+    <script>
+      // Set build date on load
+      document.addEventListener('DOMContentLoaded', function() {
+        const buildDate = new Date();
+        const month = buildDate.toLocaleString('en-US', { month: 'short' });
+        const day = buildDate.getDate();
+        const hour = buildDate.getHours() % 12 || 12; // Convert to 12-hour format
+        const minute = String(buildDate.getMinutes()).padStart(2, '0');
+        const ampm = buildDate.getHours() >= 12 ? 'pm' : 'am';
+        
+        document.getElementById('build-date').textContent = 
+          `${month} ${day}, ${hour}:${minute}${ampm}`;
+      });
+    </script>
         
     <!-- Selected text display area -->
     <div class="content-box">
@@ -51,7 +67,7 @@
 
     <!-- Control buttons -->
     <button onclick="reloadSidebar()">Reload Sidebar</button>
-    <button onclick="refreshDocCache()">Reload Source Docs</button>
+    <button onclick="refreshDocCache()">Reload Documents</button>
     <button onclick="getSelection2()">Get Selection</button>
     <button onclick="generatePromptAndCopyToClipboard()">Generate Prompt and Copy to Clipboard</button>
     
@@ -97,13 +113,48 @@
       let lastPart3LoadTime = 0;
       const CACHE_EXPIRY_MS = 60000; // 1 minute
       
-      // Initialize by loading document and selection
+      // Get build date for title
+      const BUILD_DATE = new Date();
+      const BUILD_MONTH = BUILD_DATE.toLocaleString('en-US', { month: 'short' });
+      const BUILD_DAY = BUILD_DATE.getDate();
+      const BUILD_HOUR = BUILD_DATE.getHours();
+      const BUILD_MINUTE = BUILD_DATE.getMinutes();
+      const BUILD_AMPM = BUILD_HOUR >= 12 ? 'pm' : 'am';
+      const BUILD_HOUR_12 = BUILD_HOUR % 12 || 12; // Convert to 12-hour format
+      
+      // Initialize by loading documents and selection
       function loadInitialState() {
         // Get selection immediately
         getSelection2();
         
+        // Start background loading of all documents so they're ready when needed
+        logMessage('Initializing document cache (preloading all parts)...');
+        
+        // Show compact loading indicator
+        document.getElementById('manuscript-context').innerHTML = 
+          '<div style="padding: 5px; background-color: #f8f9fa; border-radius: 4px; font-size: 12px; text-align: center;">' +
+          '<strong>Preloading documents</strong> <span class="loading-dots"></span>' +
+          '</div>';
+        
+        // Add some CSS for animated loading dots
+        const style = document.createElement('style');
+        style.textContent = `
+          @keyframes loadingDots {
+            0% { content: ""; }
+            25% { content: "."; }
+            50% { content: ".."; }
+            75% { content: "..."; }
+          }
+          .loading-dots:after {
+            content: "";
+            animation: loadingDots 1.5s infinite;
+            display: inline-block;
+            width: 12px;
+          }
+        `;
+        document.head.appendChild(style);
+        
         // Start background loading of documents
-        logMessage('Initializing document cache...');
         loadDocumentCache();
         
         // Set up periodic background refresh
@@ -113,29 +164,101 @@
         }, CACHE_EXPIRY_MS);
       }
       
-      // Load all documents in background
+      // Load only the current document by default, determined by which part we're working with
       function loadDocumentCache() {
         const now = Date.now();
         
-        // Note: For Part 2, we don't need to load Part 1 document since we use the PART1_SUMMARY constant
-        // But we'll still preload Part 1 for Part 1 prompts and for completeness
+        // Detect which part we're in by looking at the active document's title
+        google.script.run
+          .withSuccessHandler(function(activeDocInfo) {
+            // Get active document title
+            const docTitle = activeDocInfo.title || "";
+            logMessage('Active document: ' + docTitle);
+            
+            // Determine which part we're in by title
+            const isPart1 = docTitle.toLowerCase().includes('part 1') || 
+                            docTitle.toLowerCase().includes('part1') ||
+                            docTitle.toLowerCase().includes('part-1');
+            const isPart2 = docTitle.toLowerCase().includes('part 2') || 
+                            docTitle.toLowerCase().includes('part2') ||
+                            docTitle.toLowerCase().includes('part-2');
+            const isPart3 = docTitle.toLowerCase().includes('part 3') || 
+                            docTitle.toLowerCase().includes('part3') || 
+                            docTitle.toLowerCase().includes('part-3');
+            
+            // Load only the part we're currently working with, defaulting to Part 1
+            if (isPart3) {
+              logMessage('Detected Part 3 document - preloading only Part 3...');
+              if (!cachedPart3Content || (now - lastPart3LoadTime > CACHE_EXPIRY_MS)) {
+                loadPart3InBackground();
+              }
+            } else if (isPart2) {
+              logMessage('Detected Part 2 document - preloading only Part 2...');
+              if (!cachedPart2Content || (now - lastPart2LoadTime > CACHE_EXPIRY_MS)) {
+                loadPart2InBackground();
+              }
+            } else {
+              // Default to Part 1 or if we can't determine
+              logMessage('Detected Part 1 document (or couldn\'t determine) - preloading only Part 1...');
+              if (!cachedPart1Content || (now - lastPart1LoadTime > CACHE_EXPIRY_MS)) {
+                loadPart1InBackground();
+              }
+            }
+            
+            // After a delay, show the summary of all loaded documents
+            setTimeout(function() {
+              showCachedDocsSummary();
+            }, 2000);
+          })
+          .withFailureHandler(function(error) {
+            logMessage('Error detecting active document: ' + error);
+            // If we can't detect which part we're in, just load Part 1 as default
+            if (!cachedPart1Content || (now - lastPart1LoadTime > CACHE_EXPIRY_MS)) {
+              logMessage('Falling back to loading Part 1 only...');
+              loadPart1InBackground();
+            }
+            
+            // Still show the summary after a delay
+            setTimeout(function() {
+              showCachedDocsSummary();
+            }, 2000);
+          })
+          .getActiveDocumentInfo();
+      }
+      
+      // Refresh a specific part's document cache (for targeted refreshes)
+      function refreshPartCache(part) {
+        const now = Date.now();
         
-        // Check if we need to refresh Part 1
-        if (!cachedPart1Content || (now - lastPart1LoadTime > CACHE_EXPIRY_MS)) {
-          logMessage('Preloading Part 1 document...');
-          loadPart1InBackground();
-        }
-        
-        // Check if we need to refresh Part 2
-        if (!cachedPart2Content || (now - lastPart2LoadTime > CACHE_EXPIRY_MS)) {
-          logMessage('Preloading Part 2 document...');
-          loadPart2InBackground();
-        }
-        
-        // Check if we need to refresh Part 3
-        if (!cachedPart3Content || (now - lastPart3LoadTime > CACHE_EXPIRY_MS)) {
-          logMessage('Preloading Part 3 document...');
-          loadPart3InBackground();
+        switch(part) {
+          case 1:
+            logMessage('Refreshing Part 1 document preload...');
+            // Reset the timestamp to force refresh
+            lastPart1LoadTime = 0;
+            loadPart1InBackground();
+            break;
+          case 2:
+            logMessage('Refreshing Part 2 document preload...');
+            // Reset the timestamp to force refresh
+            lastPart2LoadTime = 0;
+            loadPart2InBackground();
+            break;
+          case 3:
+            logMessage('Refreshing Part 3 document preload...');
+            // Reset the timestamp to force refresh
+            lastPart3LoadTime = 0;
+            loadPart3InBackground();
+            break;
+          default:
+            logMessage('Refreshing all document preloads...');
+            // Reset all timestamps to force refresh
+            lastPart1LoadTime = 0;
+            lastPart2LoadTime = 0;
+            lastPart3LoadTime = 0;
+            // Load all parts
+            loadPart1InBackground();
+            loadPart2InBackground();
+            loadPart3InBackground();
         }
       }
       
@@ -148,7 +271,7 @@
             
             // Calculate word count
             const wordCount = content.trim().split(/\s+/).length;
-            logMessage(`✅ Part 1 document cached (${wordCount} words)`);
+            logMessage(`✅ Part 1 document preloaded (${wordCount} words)`);
           })
           .withFailureHandler(function(error) {
             logMessage(`❌ Failed to cache Part 1: ${error}`);
@@ -165,7 +288,7 @@
             
             // Calculate word count
             const wordCount = content.trim().split(/\s+/).length;
-            logMessage(`✅ Part 2 document cached (${wordCount} words)`);
+            logMessage(`✅ Part 2 document preloaded (${wordCount} words)`);
           })
           .withFailureHandler(function(error) {
             logMessage(`❌ Failed to cache Part 2: ${error}`);
@@ -188,11 +311,11 @@
               // Extract word count from warning message
               const match = content.match(/Only (\d+) words were loaded/);
               const extractedCount = match ? match[1] : wordCount;
-              logMessage(`⚠️ Part 3 document cached with WARNING: incomplete content (${extractedCount} words, expected ~11,000 words)`);
+              logMessage(`⚠️ Part 3 document preloaded with WARNING: incomplete content (${extractedCount} words, expected ~11,000 words)`);
             } else if (wordCount < 1000) {
-              logMessage(`⚠️ Part 3 document cached but content appears incomplete (${wordCount} words, expected ~11,000 words)`);
+              logMessage(`⚠️ Part 3 document preloaded but content appears incomplete (${wordCount} words, expected ~11,000 words)`);
             } else {
-              logMessage(`✅ Part 3 document cached (${wordCount} words)`);
+              logMessage(`✅ Part 3 document preloaded (${wordCount} words)`);
             }
           })
           .withFailureHandler(function(error) {
@@ -255,55 +378,89 @@
           .getSelectedText();
       }
 
-      // Display document summary from cache (used by the "Reload Source Docs" button)
+      // Display document summary from preloaded documents
       function showCachedDocsSummary() {
-        // Create a formatted summary of cached documents
-        let summaryHTML = '<div style="padding: 10px; background-color: #f8f9fa; border-radius: 4px;">';
+        // Create a compact formatted summary of preloaded documents
+        let summaryHTML = '<div style="padding: 5px; background-color: #f8f9fa; border-radius: 4px; font-size: 12px;">';
         
-        // Part 1 summary
+        // Create a table-like layout for compact display
+        summaryHTML += '<table style="width: 100%; border-collapse: collapse;">';
+        summaryHTML += '<tr style="border-bottom: 1px solid #eee;">' +
+                      '<th style="text-align: left; width: 30px;">Part</th>' +
+                      '<th style="text-align: left;">Status</th>' +
+                      '<th style="text-align: right; width: 50px;">Words</th>' +
+                      '<th style="text-align: right; width: 40px;">Age</th>' +
+                      '</tr>';
+        
+        // Part 1 summary - compact row
         if (cachedPart1Content) {
           const part1WordCount = cachedPart1Content.trim().split(/\s+/).length;
           const part1Age = Math.round((Date.now() - lastPart1LoadTime) / 1000);
-          summaryHTML += `<strong>Part 1:</strong> ${part1WordCount} words (cached ${part1Age}s ago)<br>`;
+          summaryHTML += '<tr>' +
+                        '<td><strong>P1</strong></td>' +
+                        '<td><span style="color: #2ecc71;">✓ Ready</span></td>' +
+                        `<td style="text-align: right;">${part1WordCount}</td>` +
+                        `<td style="text-align: right;">${part1Age}s</td>` +
+                        '</tr>';
         } else {
-          summaryHTML += '<strong>Part 1:</strong> Not cached yet<br>';
+          summaryHTML += '<tr>' +
+                        '<td><strong>P1</strong></td>' +
+                        '<td colspan="3"><span style="color: #7f8c8d;">Not preloaded</span></td>' +
+                        '</tr>';
         }
         
-        // Part 2 summary
+        // Part 2 summary - compact row
         if (cachedPart2Content) {
           const part2WordCount = cachedPart2Content.trim().split(/\s+/).length;
           const part2Age = Math.round((Date.now() - lastPart2LoadTime) / 1000);
-          summaryHTML += `<strong>Part 2:</strong> ${part2WordCount} words (cached ${part2Age}s ago)<br>`;
+          summaryHTML += '<tr>' +
+                        '<td><strong>P2</strong></td>' +
+                        '<td><span style="color: #2ecc71;">✓ Ready</span></td>' +
+                        `<td style="text-align: right;">${part2WordCount}</td>` +
+                        `<td style="text-align: right;">${part2Age}s</td>` +
+                        '</tr>';
         } else {
-          summaryHTML += '<strong>Part 2:</strong> Not cached yet<br>';
+          summaryHTML += '<tr>' +
+                        '<td><strong>P2</strong></td>' +
+                        '<td colspan="3"><span style="color: #7f8c8d;">Not preloaded</span></td>' +
+                        '</tr>';
         }
         
-        // Part 3 summary
+        // Part 3 summary - compact row
         if (cachedPart3Content) {
           const part3WordCount = cachedPart3Content.trim().split(/\s+/).length;
           const part3Age = Math.round((Date.now() - lastPart3LoadTime) / 1000);
           
-          if (cachedPart3Content.includes('WARNING: Incomplete Content Detected')) {
+          if (cachedPart3Content.includes('WARNING: Incomplete Content Detected') || part3WordCount < 1000) {
             // Extract word count from warning message if available
             const match = cachedPart3Content.match(/Only (\d+) words were loaded/);
             const extractedCount = match ? match[1] : part3WordCount;
-            summaryHTML += `<strong>Part 3:</strong> <span style="color: #e67e22;">⚠️ INCOMPLETE: only ${extractedCount} words</span> (expected ~11,000, cached ${part3Age}s ago)<br>`;
-          } else if (part3WordCount < 1000) {
-            // Content is suspiciously small
-            summaryHTML += `<strong>Part 3:</strong> <span style="color: #e67e22;">⚠️ INCOMPLETE: only ${part3WordCount} words</span> (expected ~11,000, cached ${part3Age}s ago)<br>`;
+            summaryHTML += '<tr>' +
+                          '<td><strong>P3</strong></td>' +
+                          '<td><span style="color: #e67e22;">⚠️ Incomplete</span></td>' +
+                          `<td style="text-align: right;">${extractedCount}</td>` +
+                          `<td style="text-align: right;">${part3Age}s</td>` +
+                          '</tr>';
           } else {
-            // Content looks reasonable
-            summaryHTML += `<strong>Part 3:</strong> ${part3WordCount} words (cached ${part3Age}s ago)<br>`;
+            summaryHTML += '<tr>' +
+                          '<td><strong>P3</strong></td>' +
+                          '<td><span style="color: #2ecc71;">✓ Ready</span></td>' +
+                          `<td style="text-align: right;">${part3WordCount}</td>` +
+                          `<td style="text-align: right;">${part3Age}s</td>` +
+                          '</tr>';
           }
         } else {
-          summaryHTML += '<strong>Part 3:</strong> Not cached yet<br>';
+          summaryHTML += '<tr>' +
+                        '<td><strong>P3</strong></td>' +
+                        '<td colspan="3"><span style="color: #7f8c8d;">Not preloaded</span></td>' +
+                        '</tr>';
         }
         
+        summaryHTML += '</table>';
         summaryHTML += '</div>';
         
         // Display in the manuscript context area
         document.getElementById('manuscript-context').innerHTML = summaryHTML;
-        logMessage('Showing cached documents summary');
       }
 
       // Reload the entire sidebar
@@ -320,27 +477,33 @@
       
       // Force refresh of document cache and update UI
       function refreshDocCache() {
-        logMessage('🔄 Forcing refresh of document cache...');
+        logMessage('🔄 Forcing refresh of all document preloads...');
         
-        // Reset timestamps to force refresh
+        // Reset all timestamps to force refresh
         lastPart1LoadTime = 0;
         lastPart2LoadTime = 0;
         lastPart3LoadTime = 0;
         
-        // Show loading indicators
-        document.getElementById('manuscript-context').innerHTML = 
-          '<div style="padding: 10px; background-color: #f8f9fa; border-radius: 4px; text-align: center;">' +
-          '<strong>Refreshing document cache...</strong><br>' +
-          '<div style="margin-top: 10px;">Loading Part 1, Part 2, and Part 3 documents...</div>' +
-          '</div>';
+        // Show loading animation in the table
+        showCachedDocsSummary();
         
-        // Load all documents
-        loadDocumentCache();
+        // Add loading indicators to all rows
+        const rows = document.querySelectorAll('#manuscript-context table tr');
+        for (let i = 1; i < rows.length; i++) { // Skip header row
+          if (rows[i].cells.length > 1) {
+            rows[i].cells[1].innerHTML = '<span style="color: #3498db;">⏳ Loading...</span> <span class="loading-dots"></span>';
+            if (rows[i].cells.length > 2) rows[i].cells[2].innerHTML = '...';
+            if (rows[i].cells.length > 3) rows[i].cells[3].innerHTML = '0s';
+          }
+        }
+        
+        // Call the refreshPartCache function to refresh all parts
+        refreshPartCache(); // With no parameter, it will refresh all parts
         
         // After a delay, show the summary
         setTimeout(function() {
           showCachedDocsSummary();
-        }, 1500);
+        }, 2000);
       }
 
       // Generate prompt and copy to clipboard
@@ -682,6 +845,21 @@
         } else {
           // Cache is invalid or missing, need to load
           logMessage('Cache expired or missing, loading Part 1 document (takes about 15s)...');
+          
+          // Reset the timestamp to force refresh
+          lastPart1LoadTime = 0;
+          
+          // Update the status in the compact table instead of replacing it
+          showCachedDocsSummary();
+          
+          // Add a loading indicator to the Part 1 row only
+          const part1Row = document.querySelector('#manuscript-context table tr:nth-child(2)');
+          if (part1Row) {
+            part1Row.cells[1].innerHTML = '<span style="color: #3498db;">⏳ Loading...</span> <span class="loading-dots"></span>';
+            part1Row.cells[2].innerHTML = '...';
+            part1Row.cells[3].innerHTML = '0s';
+          }
+          
           google.script.run
             .withSuccessHandler(function(content) {
               // Update cache
@@ -787,6 +965,21 @@
         } else {
           // Cache is invalid or missing, need to load
           logMessage('Cache expired or missing, loading Part 2 document (takes about 15s)...');
+          
+          // Reset the timestamp to force refresh
+          lastPart2LoadTime = 0;
+          
+          // Update the status in the compact table instead of replacing it
+          showCachedDocsSummary();
+          
+          // Add a loading indicator to the Part 2 row only
+          const part2Row = document.querySelector('#manuscript-context table tr:nth-child(3)');
+          if (part2Row) {
+            part2Row.cells[1].innerHTML = '<span style="color: #3498db;">⏳ Loading...</span> <span class="loading-dots"></span>';
+            part2Row.cells[2].innerHTML = '...';
+            part2Row.cells[3].innerHTML = '0s';
+          }
+          
           google.script.run
             .withSuccessHandler(function(content) {
               // Update cache
@@ -896,6 +1089,21 @@
         } else {
           // Cache is invalid or missing, need to load
           logMessage('Cache expired or missing, loading Part 3 document (takes about 15s)...');
+          
+          // Reset the timestamp to force refresh
+          lastPart3LoadTime = 0;
+          
+          // Update the status in the compact table instead of replacing it
+          showCachedDocsSummary();
+          
+          // Add a loading indicator to the Part 3 row only
+          const part3Row = document.querySelector('#manuscript-context table tr:nth-child(4)');
+          if (part3Row) {
+            part3Row.cells[1].innerHTML = '<span style="color: #3498db;">⏳ Loading...</span> <span class="loading-dots"></span>';
+            part3Row.cells[2].innerHTML = '...';
+            part3Row.cells[3].innerHTML = '0s';
+          }
+          
           google.script.run
             .withSuccessHandler(function(content) {
               // Update cache
