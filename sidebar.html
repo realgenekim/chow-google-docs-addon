@@ -72,6 +72,15 @@
     <!-- <button onclick="getSelection2()">Get Selection</button> -->
     <!-- <button onclick="generatePromptAndCopyToClipboard()">Generate Prompt and Copy to Clipboard</button> -->
     
+    <!-- Prompt selection radio buttons -->
+    <div style="margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
+      <h4 style="margin-top: 0; margin-bottom: 8px;">Select Prompt Type:</h4>
+      <div id="prompt-radio-container">
+        <!-- Radio buttons will be populated dynamically -->
+        <div style="color: #3498db; font-style: italic;">Loading prompt options...</div>
+      </div>
+    </div>
+
     <!-- Part-specific buttons -->
     <div style="margin-top: 10px;">
       <button onclick="getPart1DocAndPrompt()">Part 1 Prompt to Clipboard</button>
@@ -103,7 +112,56 @@
       // Load initial state when window loads
       window.onload = function() {
         loadInitialState();
+        loadPromptOptions();
       };
+
+      // Function to load and display prompt options as radio buttons
+      function loadPromptOptions() {
+        google.script.run
+          .withSuccessHandler(function(promptOptions) {
+            const container = document.getElementById('prompt-radio-container');
+            
+            if (!promptOptions || !Array.isArray(promptOptions) || promptOptions.length === 0) {
+              container.innerHTML = '<div style="color: #e74c3c;">No prompt options available</div>';
+              return;
+            }
+            
+            // Clear loading message
+            container.innerHTML = '';
+            
+            // Create radio buttons for each prompt option
+            promptOptions.forEach((promptOption, index) => {
+              const radioId = `prompt-option-${index}`;
+              const radioDiv = document.createElement('div');
+              radioDiv.style.margin = '5px 0';
+              
+              const radio = document.createElement('input');
+              radio.type = 'radio';
+              radio.id = radioId;
+              radio.name = 'prompt-option';
+              radio.value = promptOption.id;
+              if (index === 0) radio.checked = true; // Select first option by default
+              
+              const label = document.createElement('label');
+              label.htmlFor = radioId;
+              label.textContent = promptOption.label || promptOption.id; // Use label if available, otherwise ID
+              label.style.marginLeft = '5px';
+              label.style.fontSize = '13px';
+              
+              radioDiv.appendChild(radio);
+              radioDiv.appendChild(label);
+              container.appendChild(radioDiv);
+            });
+            
+            logMessage(`Loaded ${promptOptions.length} prompt options`);
+          })
+          .withFailureHandler(function(error) {
+            const container = document.getElementById('prompt-radio-container');
+            container.innerHTML = `<div style="color: #e74c3c;">Error loading prompts: ${error}</div>`;
+            logMessage(`Error loading prompt options: ${error}`);
+          })
+          .getPromptOptions();
+      }
 
       // Global cache variables for document content
       let cachedPart1Content = null;
@@ -507,9 +565,23 @@
         }, 2000);
       }
 
+      // Get the currently selected prompt option
+      function getSelectedPromptOption() {
+        const radioButtons = document.querySelectorAll('input[name="prompt-option"]');
+        for (const radioButton of radioButtons) {
+          if (radioButton.checked) {
+            return radioButton.value;
+          }
+        }
+        // Default if none selected
+        return "put-in-artifacts";
+      }
+      
       // Generate prompt and copy to clipboard
       function generatePromptAndCopyToClipboard() {
-        logMessage('generatePromptAndCopyToClipboard called!');
+        const selectedPrompt = getSelectedPromptOption();
+        logMessage(`generatePromptAndCopyToClipboard called with prompt option: ${selectedPrompt}`);
+        
         google.script.run
           .withSuccessHandler(function(promptText) {
             try {
@@ -522,7 +594,7 @@
           .withFailureHandler(function(error) {
             logMessage('Error generating prompt: ' + error);
           })
-          .generatePromptAndCopyToClipboard();
+          .generatePromptWithOption(selectedPrompt);
       }
       
       // Copy with retry logic - will try Navigator API first, then fallback, with 3 retries
@@ -900,13 +972,15 @@
             '</div>';
             
           // Continue with prompt generation despite error
-          logMessage('Continuing with prompt generation using placeholder content...');
+          const selectedPrompt = getSelectedPromptOption();
+          logMessage(`Continuing with prompt generation using placeholder content and option "${selectedPrompt}"...`);
           generatePromptAndCopyToClipboard();
         } else {
           // Normal flow - no errors
           var wordCount = content.trim().split(/\s+/).length;
           document.getElementById('manuscript-context').innerHTML = 'Part 1 Word count: ' + wordCount;
-          logMessage('Part 1 ready, generating prompt...');
+          const selectedPrompt = getSelectedPromptOption();
+          logMessage(`Part 1 ready, generating prompt with option "${selectedPrompt}"...`);
           
           // Generate and copy the prompt
           generatePromptAndCopyToClipboard();
@@ -1020,7 +1094,8 @@
             '</div>';
             
           // Continue with prompt generation despite error
-          logMessage('Continuing with prompt generation using placeholder content...');
+          const selectedPrompt = getSelectedPromptOption();
+          logMessage(`Continuing with prompt generation using placeholder content and option "${selectedPrompt}"...`);
           generatePromptAndCopyToClipboard();
         } else {
           // Normal flow - no errors
@@ -1030,7 +1105,8 @@
               <strong>Part 2:</strong> ${wordCount} words<br>
               <em>Note: Using PART1_SUMMARY constant instead of loading Part 1 document</em>
             </div>`;
-          logMessage('Part 2 ready, generating prompt with PART1_SUMMARY...');
+          const selectedPrompt = getSelectedPromptOption();
+          logMessage(`Part 2 ready, generating prompt with PART1_SUMMARY and option "${selectedPrompt}"...`);
           
           // Generate and copy the prompt
           generatePromptAndCopyToClipboard();
@@ -1144,7 +1220,8 @@
             '</div>';
             
           // Continue with prompt generation despite error
-          logMessage('Continuing with prompt generation using placeholder content...');
+          const selectedPrompt = getSelectedPromptOption();
+          logMessage(`Continuing with prompt generation using placeholder content and option "${selectedPrompt}"...`);
           generatePromptAndCopyToClipboard();
         } else if (content.includes('WARNING: Incomplete Content Detected')) {
           logMessage('⚠️ Incomplete content warning detected');
@@ -1167,7 +1244,8 @@
             '</div>';
             
           // Continue with prompt generation despite warning
-          logMessage(`Continuing with prompt generation using incomplete content (${wordCount} words)...`);
+          const selectedPrompt = getSelectedPromptOption();
+          logMessage(`Continuing with prompt generation using incomplete content (${wordCount} words) and option "${selectedPrompt}"...`);
           generatePromptAndCopyToClipboard();
         } else {
           // Normal flow - no errors
@@ -1180,13 +1258,15 @@
                 <strong>⚠️ Part 3:</strong> Only ${wordCount} words loaded (expected ~11,000 words)<br>
                 The document appears to be incomplete. The prompt may not contain all necessary content.
               </div>`;
-            logMessage(`⚠️ Part 3 content suspiciously short (${wordCount} words) but proceeding...`);
+            const selectedPrompt = getSelectedPromptOption();
+            logMessage(`⚠️ Part 3 content suspiciously short (${wordCount} words) but proceeding with option "${selectedPrompt}"...`);
           } else {
             document.getElementById('manuscript-context').innerHTML = 
               `<div style="padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
                 <strong>Part 3:</strong> ${wordCount} words
               </div>`;
-            logMessage(`Part 3 ready, generating prompt (${wordCount} words)...`);
+            const selectedPrompt = getSelectedPromptOption();
+            logMessage(`Part 3 ready, generating prompt (${wordCount} words) with option "${selectedPrompt}"...`);
           }
           
           // Generate and copy the prompt

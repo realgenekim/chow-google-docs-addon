@@ -204,7 +204,30 @@ Enclosed in this prompt is "mansuscript-context" which contains the full manscri
 
 Please critique this portion, included as as "section-to-be-worked-on".
 Then make your revisions and put them into an artifact in the artifacts window.
-Only output into Artifacts the the section to be worked on.`;
+Only output into Artifacts the the section to be worked on.
+`;
+
+// Export this variable to make it accessible in main.ts
+// Changed from object to array of objects to preserve order
+const PROMPTS = [
+  { 
+    id: "put-in-artifacts", 
+    label: "Put in Artifacts", 
+    text: YOUR_TASK_TEXT 
+  },
+  { 
+    id: "generate-3-options", 
+    label: "Generate 3 Options", 
+    text: `
+    Study this text. 
+    Enclosed in this prompt is "manuscript-context" which contains the full manscript.  I love Part 1 — the tone, style, inviting nature.
+
+    We're going to work on "section-to-be-worked-on".  Put this into the Artifacts window unchanged.
+
+    In the chat window, critique it, and then generate options for this text in the chat session.
+    `
+  }
+]
 
 function assemblePrompt(manuscript: string, currentSection: string): PromptSection[] {
   console.log('manuscript (first 250 chars):', manuscript.substring(0, 250));

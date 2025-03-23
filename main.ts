@@ -86,17 +86,55 @@ function getSelectedText() {
 }
 
 
-// Import the PART1_SUMMARY from the assemble_prompt.ts file
-// @ts-ignore - this is defined in assemble_prompt.ts
-const { PART1_SUMMARY } = this;
+// Import the necessary variables from the assemble_prompt.ts file
+// @ts-ignore - these are defined in assemble_prompt.ts
+const { PART1_SUMMARY, PART2_SUMMARY, PROMPTS } = this;
 
 // Initialize global variables from properties
 let globalContentBook = PropertiesService.getUserProperties().getProperty('globalContentBook') || "";
 let globalSelection = PropertiesService.getUserProperties().getProperty('globalSelection') || "";
+let selectedPromptOption = PropertiesService.getUserProperties().getProperty('selectedPromptOption') || "put-in-artifacts";
 
-function generatePromptAndCopyToClipboard() {
-  const prompt = assemblePrompt(globalContentBook, globalSelection);
-  const result = JSON.stringify(prompt, null, 2); // Returns formatted JSON string
+/**
+ * Gets all available prompt options from the PROMPTS array
+ * @return {Array} Array containing prompt options with id, label, and text properties
+ */
+function getPromptOptions() {
+  // Return a copy of the PROMPTS array
+  return PROMPTS ? JSON.parse(JSON.stringify(PROMPTS)) : [];
+}
+
+/**
+ * Generate a prompt using the selected prompt option
+ * @param {string} promptOptionId - The ID of the prompt option to use
+ * @return {string} The generated prompt in JSON format
+ */
+function generatePromptWithOption(promptOptionId) {
+  // Save the selected option to properties
+  selectedPromptOption = promptOptionId;
+  PropertiesService.getUserProperties().setProperty('selectedPromptOption', promptOptionId);
+  
+  // Log the selected prompt option
+  Logger.log(`Using prompt option: ${promptOptionId}`);
+  
+  // Generate the prompt with the selected template
+  const promptSections = assemblePrompt(globalContentBook, globalSelection);
+  
+  // Find the selected prompt template
+  const selectedPrompt = PROMPTS.find(prompt => prompt.id === promptOptionId);
+  
+  // Modify the YOUR_TASK section with the selected prompt template
+  if (selectedPrompt) {
+    // Find and replace the YOUR_TASK section
+    for (let i = 0; i < promptSections.length; i++) {
+      if (promptSections[i]["your-task"]) {
+        promptSections[i]["your-task"] = selectedPrompt.text;
+        break;
+      }
+    }
+  }
+  
+  const result = JSON.stringify(promptSections, null, 2);
   
   // Log what mode we're using (full content or with Part 1/Part 2 summary)
   const isPart2 = globalContentBook.startsWith('# Part 2');
@@ -119,6 +157,14 @@ function generatePromptAndCopyToClipboard() {
   }
   
   return result;
+}
+
+/**
+ * Legacy function for backward compatibility
+ * @return {string} The generated prompt in JSON format
+ */
+function generatePromptAndCopyToClipboard() {
+  return generatePromptWithOption(selectedPromptOption);
 }
 
 function getDoc() {
