@@ -187,20 +187,24 @@ The authors conclude that while programming is changing dramatically, the essenc
 
 // ====
 
-const PROJECT_GOALS_TEXT = `Steve Yegge (of Amazon and Google fame) and Gene Kim (of Phoenix Project and DevOps Handbook fame) are working on this book, with tentative titles of:
+const PROJECT_GOALS_TEXT = `
+Steve Yegge (of Amazon and Google fame) and Gene Kim (of Phoenix Project and DevOps Handbook fame) are working on this book, with tentative titles of:
 
 "The Vibe Coding Handbook: How To Engineer Production-Grade Software With GenAI, Chat, Agents, and Beyond"
 
 Claude and any LLMs: Please note: There are certain sections of this manuscript that we love. They are enclosed in XML <exemplar> tags. When asked to generate text, please use these sections for tone, style, etc.
 
-<exemplar>`;
+<exemplar>
+`;
 
-const YOUR_TASK_TEXT = `Study this text.  It's  more difficult to read than i want, the sections seem to blur into each other.  There are some aha moments, but they're kind of lost.
+const YOUR_TASK_TEXT = 
+`Study this text.  It's  more difficult to read than i want, the sections seem to blur into each other.  There are some aha moments, but they're kind of lost.
 
 Enclosed in this prompt is "mansuscript-context" which contains the full manscript.  I love Part 1 — the tone, style, inviting nature.
 
 Please critique this portion, included as as "section-to-be-worked-on".
-Then make your revisions and put them into an artifact in the artifacts window.`;
+Then make your revisions and put them into an artifact in the artifacts window.
+Only output into Artifacts the the section to be worked on.`;
 
 function assemblePrompt(manuscript: string, currentSection: string): PromptSection[] {
   console.log('manuscript (first 250 chars):', manuscript.substring(0, 250));
