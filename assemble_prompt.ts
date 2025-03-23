@@ -197,15 +197,6 @@ Claude and any LLMs: Please note: There are certain sections of this manuscript 
 <exemplar>
 `;
 
-const YOUR_TASK_TEXT = 
-`Study this text.  It's  more difficult to read than i want, the sections seem to blur into each other.  There are some aha moments, but they're kind of lost.
-
-Enclosed in this prompt is "mansuscript-context" which contains the full manscript.  I love Part 1 — the tone, style, inviting nature.
-
-Please critique this portion, included as as "section-to-be-worked-on".
-Then make your revisions and put them into an artifact in the artifacts window.
-Only output into Artifacts the the section to be worked on.
-`;
 
 // Export this variable to make it accessible in main.ts
 // Changed from object to array of objects to preserve order
@@ -213,7 +204,27 @@ const PROMPTS = [
   { 
     id: "put-in-artifacts", 
     label: "Put in Artifacts", 
-    text: YOUR_TASK_TEXT 
+    text: 
+    `Enclosed in this prompt is "manuuscript-context" which contains the full book manscript.  I love Part 1 — the tone, style, inviting nature.
+
+    We're going to work on "section-to-be-worked-on".  Put this into the Artifacts window unchanged.
+    
+    Please critique this portion in the Chat window.
+    `
+  },
+  { 
+    id: "rewrite-in-artifacts", 
+    label: "Rewrite in Artifacts", 
+    text: 
+    `Enclosed in this prompt is "manuuscript-context" which contains the full book manscript.  I love Part 1 — the tone, style, inviting nature.
+
+    We're going to work on "section-to-be-worked-on".  
+    
+    Study the Part 1 example sections, and rewrite this portion in the same tone and style. 
+    Put the rewritten text into the Artifacts window unchanged.
+    
+    Please critique this portion in the Chat window.
+    `
   },
   { 
     id: "generate-3-options", 
@@ -231,18 +242,23 @@ const PROMPTS = [
   }
 ]
 
-function assemblePrompt(manuscript: string, currentSection: string): PromptSection[] {
+function assemblePrompt(manuscript: string, currentSection: string, selectedPromptId: string = "put-in-artifacts"): PromptSection[] {
   console.log('manuscript (first 250 chars):', manuscript.substring(0, 250));
   console.log('currentSection (first 250 chars):', currentSection.substring(0, 250));
+  console.log('using prompt with ID:', selectedPromptId);
   
   // Check what part we're dealing with
   const isPart2 = manuscript.startsWith('# Part 2');
   const isPart3 = manuscript.startsWith('# Part 3');
   
+  // Find the selected prompt template
+  const selectedPrompt = PROMPTS.find(prompt => prompt.id === selectedPromptId);
+  const promptText = selectedPrompt ? selectedPrompt.text : PROMPTS[0].text;
+  
   // Create base prompt sections
   const promptSections = [
     { "project-goals": PROJECT_GOALS_TEXT },
-    { "your-task": YOUR_TASK_TEXT }
+    { "your-task": promptText }
   ];
   
   // Include the summaries for Part 2 and Part 3

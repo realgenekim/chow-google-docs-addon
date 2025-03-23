@@ -117,22 +117,8 @@ function generatePromptWithOption(promptOptionId) {
   // Log the selected prompt option
   Logger.log(`Using prompt option: ${promptOptionId}`);
   
-  // Generate the prompt with the selected template
-  const promptSections = assemblePrompt(globalContentBook, globalSelection);
-  
-  // Find the selected prompt template
-  const selectedPrompt = PROMPTS.find(prompt => prompt.id === promptOptionId);
-  
-  // Modify the YOUR_TASK section with the selected prompt template
-  if (selectedPrompt) {
-    // Find and replace the YOUR_TASK section
-    for (let i = 0; i < promptSections.length; i++) {
-      if (promptSections[i]["your-task"]) {
-        promptSections[i]["your-task"] = selectedPrompt.text;
-        break;
-      }
-    }
-  }
+  // Generate the prompt with the selected template, passing the prompt ID
+  const promptSections = assemblePrompt(globalContentBook, globalSelection, promptOptionId);
   
   const result = JSON.stringify(promptSections, null, 2);
   
