@@ -12,3 +12,9 @@ diff:
 
 gitcommit:
 	git commit -F /tmp/diffs
+
+gitmergemain:
+	git checkout main
+	git pull origin main
+	git merge your-branch
+	git push
