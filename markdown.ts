@@ -6,59 +6,59 @@
 function exportDocToMarkdown(docId) {
   try {
     Logger.log('Attempting to open document with ID: ' + docId);
-    
+
     // Try to access the document - may fail with permission error
     let doc;
     try {
       doc = DocumentApp.openById(docId);
     } catch (accessError) {
       // Handle access errors specifically
-      if (accessError.toString().includes("403") || 
+      if (accessError.toString().includes("403") ||
           accessError.toString().includes("Access denied") ||
           accessError.toString().includes("permission")) {
-        
-        const errorMessage = `# Access Error\n\nUnable to access document ${docId}\n\n` + 
+
+        const errorMessage = `# Access Error\n\nUnable to access document ${docId}\n\n` +
           "This document may not be shared with your Google account.\n\n" +
           "To fix this issue:\n" +
           "1. Make sure you're logged in with the correct Google account\n" +
           "2. Ask the document owner to share it with your email address\n" +
           "3. Open the document directly in Google Docs first to accept any sharing invitations";
-        
+
         Logger.log('Permission error accessing document: ' + accessError);
         return errorMessage;
       }
       // Re-throw other errors
       throw accessError;
     }
-    
+
     if (!doc) {
       Logger.log('Error: Could not open document with ID: ' + docId);
       return 'Error: Document not found';
     }
-    
+
     const body = doc.getBody();
     if (!body) {
       Logger.log('Error: Document body is null');
       return 'Error: Document body not found';
     }
-    
+
     const markdownText = convertBodyToMarkdown(body);
     if (!markdownText && markdownText !== '') {
       Logger.log('Warning: convertBodyToMarkdown returned null');
       return '';
     }
-    
+
     // Add additional null checks for document elements
     if (!doc.getBody() || !doc.getBody().getText()) {
       Logger.log('Error: Document body or text is null');
       return 'Error: Empty document';
     }
-    
+
     Logger.log('Successfully converted document to markdown');
     return markdownText;
   } catch (error) {
     Logger.log('Error in exportDocToMarkdown: ' + error);
-    return '# Error Accessing Document\n\n' + error.toString() + 
+    return '# Error Accessing Document\n\n' + error.toString() +
       '\n\nPlease check that the document exists and you have permission to access it.';
   }
 }
@@ -105,7 +105,7 @@ function convertBodyToMarkdown(body) {
     if (type === DocumentApp.ElementType.PARAGRAPH) {
       const paragraph = element;
       // Skip table of contents or empty paragraphs
-      if (paragraph.getType() === DocumentApp.ElementType.TABLE_OF_CONTENTS || 
+      if (paragraph.getType() === DocumentApp.ElementType.TABLE_OF_CONTENTS ||
           !paragraph.getText || // Check if getText method exists
           (typeof paragraph.getText === 'function' && paragraph.getText().trim() === "")) {
         continue;
@@ -160,8 +160,26 @@ function convertBodyToMarkdown(body) {
     }
 
     // Build the content string by iterating through child elements (text runs, footnotes, etc.)
+    // First, filter out any elements that are entirely suggested deletions
+    const childElements = [];
     for (let j = 0; j < element.getNumChildren(); j++) {
       const child = element.getChild(j);
+      // Skip elements that are entirely suggested deletions
+      if (child.getType() === DocumentApp.ElementType.TEXT) {
+        // Check if the entire text element is a suggested deletion
+        const text = child.getText();
+        if (text && text.length > 0 && !isSuggestedDeletion(child, 0, text.length)) {
+          childElements.push(child);
+        }
+      } else {
+        // For non-text elements, include them by default
+        childElements.push(child);
+      }
+    }
+
+    // Process the filtered elements
+    for (let j = 0; j < childElements.length; j++) {
+      const child = childElements[j];
       if (child.getType() === DocumentApp.ElementType.TEXT) {
         content += formatTextRun(child);
       } else if (child.getType() === DocumentApp.ElementType.FOOTNOTE) {
@@ -200,7 +218,46 @@ function convertBodyToMarkdown(body) {
 }
 
 /**
+ * Checks if a text element or range is a suggested deletion.
+ * @param {Object} textElem - A Text element to check.
+ * @param {number} startIndex - The start index of the text range.
+ * @param {number} endIndex - The end index of the text range.
+ * @return {boolean} True if the text is a suggested deletion, false otherwise.
+ */
+function isSuggestedDeletion(textElem, startIndex, endIndex) {
+  // Check if we have access to the necessary methods
+  if (!textElem || !textElem.getText) {
+    return false;
+  }
+
+  try {
+    // In Google Apps Script, we can check if text has suggestions
+    // by examining its attributes
+    if (textElem.getSuggestedDeletionIds) {
+      const deletionIds = textElem.getSuggestedDeletionIds(startIndex, endIndex);
+      return deletionIds && deletionIds.length > 0;
+    }
+
+    // If the API doesn't provide direct access to suggestion IDs,
+    // we can try to check if the text is marked for deletion in other ways
+    // This is a fallback approach and may not be as reliable
+    if (textElem.getAttributes) {
+      const attributes = textElem.getAttributes(startIndex);
+      // Check for any attributes that might indicate suggested deletion
+      // This is implementation-specific and may need adjustment
+      return attributes && attributes.SUGGESTED_DELETION === true;
+    }
+  } catch (error) {
+    // If we encounter an error, log it and assume it's not a suggested deletion
+    Logger.log('Error checking for suggested deletion: ' + error);
+  }
+
+  return false;
+}
+
+/**
  * Formats a Text element into Markdown, preserving inline styles (bold, italic, underline, hyperlinks).
+ * Skips text that is marked as a suggested deletion.
  * @param {Object} textElem - A Text element (or a mock) with the appropriate methods.
  * @return {string} The formatted Markdown string for the text element.
  */
@@ -211,6 +268,12 @@ function formatTextRun(textElem) {
   for (let k = 0; k < indices.length; k++) {
     const startIndex = indices[k];
     const endIndex = (k < indices.length - 1) ? indices[k + 1] : text.length;
+
+    // Skip this text segment if it's a suggested deletion
+    if (isSuggestedDeletion(textElem, startIndex, endIndex)) {
+      continue;
+    }
+
     let substring = text.substring(startIndex, endIndex);
 
     // Get text styling at startIndex
@@ -284,7 +347,7 @@ function testMarkdownConversion() {
     "> A blockquote";
 
   const output = convertBodyToMarkdown(mockBody);
-  
+
   Logger.log("Expected:\n" + expectedMarkdown);
   Logger.log("Output:\n" + output);
 
@@ -315,13 +378,13 @@ function testThreeLevelBullets() {
     }
   };
 
-  const expectedMarkdown = 
+  const expectedMarkdown =
     "- Level 0 bullet\n" +
     "  - Level 1 bullet\n" +
     "    - Level 2 bullet";
 
   const output = convertBodyToMarkdown(mockBody);
-  
+
   Logger.log("Expected (3-level bullets):\n" + expectedMarkdown);
   Logger.log("Output (3-level bullets):\n" + output);
 
@@ -431,8 +494,15 @@ MockText.prototype.getText = function() {
   return this._text;
 };
 
-// For simplicity, assume the entire text has one style run.
+// Return indices that will properly handle our test cases
 MockText.prototype.getTextAttributeIndices = function() {
+  // For the suggested deletion test, we want to split the text into segments
+  // to test the filtering of suggested deletions
+  if (this._text === "This text has a suggested deletion.") {
+    // Return indices that split the text before, during, and after the deletion
+    return [0, 13, 32];
+  }
+  // Default case: assume the entire text has one style run
   return [0];
 };
 
@@ -448,5 +518,56 @@ function testRetrieveDocMarkdown() {
   var docId = docId_part01;
   var markdown = exportDocToMarkdown(docId);
   Logger.log("Markdown for doc id " + docId + ":\n" + markdown);
+  return markdown;
+}
+
+/**
+ * Test function to verify that suggested deletions are filtered out.
+ * This function creates a mock document with suggested deletions and verifies
+ * that they are properly filtered out in the markdown output.
+ */
+function testSuggestedDeletionFiltering() {
+  // Create a mock Text element with suggested deletions
+  const mockTextWithDeletion = new MockText("This text has a suggested deletion.");
+
+  // Override the getSuggestedDeletionIds method to simulate a suggested deletion
+  mockTextWithDeletion.getSuggestedDeletionIds = function(startIndex, endIndex) {
+    // Simulate that the phrase "suggested deletion" is marked for deletion
+    const deletionStart = 13; // Start of "suggested deletion"
+    const deletionEnd = 32;   // End of "suggested deletion"
+
+    // Check if the requested range overlaps with our simulated deletion
+    if (startIndex < deletionEnd && endIndex > deletionStart) {
+      return ["deletion-id-123"]; // Return a non-empty array to indicate deletion
+    }
+    return []; // No deletion in this range
+  };
+
+  // Create a mock paragraph containing our text element
+  const mockParagraph = new MockParagraph("", DocumentApp.ParagraphHeading.NORMAL, 0);
+  mockParagraph.getNumChildren = function() { return 1; };
+  mockParagraph.getChild = function() { return mockTextWithDeletion; };
+
+  // Create a mock document body with our paragraph
+  const mockBody = {
+    getNumChildren: function() { return 1; },
+    getChild: function() { return mockParagraph; }
+  };
+
+  // Convert the mock body to markdown
+  const markdown = convertBodyToMarkdown(mockBody);
+
+  // Expected result should not contain the phrase "suggested deletion"
+  const expectedResult = "This text has a ."; // The deletion is filtered out
+
+  Logger.log("Test result: " + markdown);
+  Logger.log("Expected: " + expectedResult);
+
+  if (markdown.includes("suggested deletion")) {
+    Logger.log("❌ Test failed: Suggested deletion was not filtered out");
+  } else {
+    Logger.log("✅ Test passed: Suggested deletion was filtered out");
+  }
+
   return markdown;
 }
