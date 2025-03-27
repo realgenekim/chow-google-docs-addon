@@ -33,7 +33,7 @@
     <div style="font-size: 11px; margin-top: -5px; margin-bottom: 8px;">Build: <span id="build-date"></span></div>
     <p>Written to make it easier to CHOW: assemble and sling prompts around to paste them into an LLM.</p>
     <br>
-    
+
     <script>
       // Set build date on load
       document.addEventListener('DOMContentLoaded', function() {
@@ -43,12 +43,12 @@
         const hour = buildDate.getHours() % 12 || 12; // Convert to 12-hour format
         const minute = String(buildDate.getMinutes()).padStart(2, '0');
         const ampm = buildDate.getHours() >= 12 ? 'pm' : 'am';
-        
-        document.getElementById('build-date').textContent = 
+
+        document.getElementById('build-date').textContent =
           `${month} ${day}, ${hour}:${minute}${ampm}`;
       });
     </script>
-        
+
     <!-- Selected text display area -->
     <div class="content-box">
       <h4>Selected Text</h4>
@@ -71,7 +71,7 @@
     <!-- <button onclick="refreshDocCache()">Reload Documents</button> -->
     <!-- <button onclick="getSelection2()">Get Selection</button> -->
     <!-- <button onclick="generatePromptAndCopyToClipboard()">Generate Prompt and Copy to Clipboard</button> -->
-    
+
     <!-- Prompt selection radio buttons -->
     <div style="margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
       <h4 style="margin-top: 0; margin-bottom: 8px;">Select Prompt Type:</h4>
@@ -81,11 +81,9 @@
       </div>
     </div>
 
-    <!-- Part-specific buttons -->
+    <!-- Prompt button -->
     <div style="margin-top: 10px;">
-      <button onclick="getPart1DocAndPrompt()">Part 1 Prompt to Clipboard</button>
-      <button onclick="getPart2DocAndPrompt()">Part 2 Prompt to Clipboard</button>
-      <button onclick="getPart3DocAndPrompt()">Part 3 Prompt to Clipboard</button>
+      <button onclick="getDocumentPartAndPrompt()">Generate Prompt to Clipboard</button>
     </div>
     <div id="debug" style="margin-top: 20px; color: red; max-height: 300px; overflow-y: auto;"></div>
 
@@ -98,14 +96,14 @@
         const seconds = String(now.getSeconds()).padStart(2, '0');
         return `${hours}:${minutes}:${seconds}`;
       }
-      
+
       // Function to log messages with timestamp, newest at top
       function logMessage(message) {
         const timestampedMessage = `${getTimestamp()} - ${message}`;
         const debugElement = document.getElementById('debug');
         debugElement.innerHTML = timestampedMessage + '<br>' + debugElement.innerHTML;
       }
-      
+
       // Initialize debug output
       logMessage('BEGIN!');
 
@@ -120,39 +118,39 @@
         google.script.run
           .withSuccessHandler(function(promptOptions) {
             const container = document.getElementById('prompt-radio-container');
-            
+
             if (!promptOptions || !Array.isArray(promptOptions) || promptOptions.length === 0) {
               container.innerHTML = '<div style="color: #e74c3c;">No prompt options available</div>';
               return;
             }
-            
+
             // Clear loading message
             container.innerHTML = '';
-            
+
             // Create radio buttons for each prompt option
             promptOptions.forEach((promptOption, index) => {
               const radioId = `prompt-option-${index}`;
               const radioDiv = document.createElement('div');
               radioDiv.style.margin = '5px 0';
-              
+
               const radio = document.createElement('input');
               radio.type = 'radio';
               radio.id = radioId;
               radio.name = 'prompt-option';
               radio.value = promptOption.id;
               if (index === 0) radio.checked = true; // Select first option by default
-              
+
               const label = document.createElement('label');
               label.htmlFor = radioId;
               label.textContent = promptOption.label || promptOption.id; // Use label if available, otherwise ID
               label.style.marginLeft = '5px';
               label.style.fontSize = '13px';
-              
+
               radioDiv.appendChild(radio);
               radioDiv.appendChild(label);
               container.appendChild(radioDiv);
             });
-            
+
             logMessage(`Loaded ${promptOptions.length} prompt options`);
           })
           .withFailureHandler(function(error) {
@@ -171,7 +169,7 @@
       let lastPart2LoadTime = 0;
       let lastPart3LoadTime = 0;
       const CACHE_EXPIRY_MS = (5 * 60000); // 1 minute
-      
+
       // Get build date for title
       const BUILD_DATE = new Date();
       const BUILD_MONTH = BUILD_DATE.toLocaleString('en-US', { month: 'short' });
@@ -180,21 +178,21 @@
       const BUILD_MINUTE = BUILD_DATE.getMinutes();
       const BUILD_AMPM = BUILD_HOUR >= 12 ? 'pm' : 'am';
       const BUILD_HOUR_12 = BUILD_HOUR % 12 || 12; // Convert to 12-hour format
-      
+
       // Initialize by loading documents and selection
       function loadInitialState() {
         // Get selection immediately
         getSelection2();
-        
+
         // Start background loading of all documents so they're ready when needed
         logMessage('Initializing document cache (preloading all parts)...');
-        
+
         // Show compact loading indicator
-        document.getElementById('manuscript-context').innerHTML = 
+        document.getElementById('manuscript-context').innerHTML =
           '<div style="padding: 5px; background-color: #f8f9fa; border-radius: 4px; font-size: 12px; text-align: center;">' +
           '<strong>Preloading documents</strong> <span class="loading-dots"></span>' +
           '</div>';
-        
+
         // Add some CSS for animated loading dots
         const style = document.createElement('style');
         style.textContent = `
@@ -212,39 +210,39 @@
           }
         `;
         document.head.appendChild(style);
-        
+
         // Start background loading of documents
         loadDocumentCache();
-        
+
         // Set up periodic background refresh
         setInterval(function() {
           logMessage('Periodic cache refresh started');
           loadDocumentCache();
         }, CACHE_EXPIRY_MS);
       }
-      
+
       // Load only the current document by default, determined by which part we're working with
       function loadDocumentCache() {
         const now = Date.now();
-        
+
         // Detect which part we're in by looking at the active document's title
         google.script.run
           .withSuccessHandler(function(activeDocInfo) {
             // Get active document title
             const docTitle = activeDocInfo.title || "";
             logMessage('Active document: ' + docTitle);
-            
+
             // Determine which part we're in by title
-            const isPart1 = docTitle.toLowerCase().includes('part 1') || 
+            const isPart1 = docTitle.toLowerCase().includes('part 1') ||
                             docTitle.toLowerCase().includes('part1') ||
                             docTitle.toLowerCase().includes('part-1');
-            const isPart2 = docTitle.toLowerCase().includes('part 2') || 
+            const isPart2 = docTitle.toLowerCase().includes('part 2') ||
                             docTitle.toLowerCase().includes('part2') ||
                             docTitle.toLowerCase().includes('part-2');
-            const isPart3 = docTitle.toLowerCase().includes('part 3') || 
-                            docTitle.toLowerCase().includes('part3') || 
+            const isPart3 = docTitle.toLowerCase().includes('part 3') ||
+                            docTitle.toLowerCase().includes('part3') ||
                             docTitle.toLowerCase().includes('part-3');
-            
+
             // Load only the part we're currently working with, defaulting to Part 1
             if (isPart3) {
               logMessage('Detected Part 3 document - preloading only Part 3...');
@@ -263,7 +261,7 @@
                 loadPart1InBackground();
               }
             }
-            
+
             // After a delay, show the summary of all loaded documents
             setTimeout(function() {
               showCachedDocsSummary();
@@ -276,7 +274,7 @@
               logMessage('Falling back to loading Part 1 only...');
               loadPart1InBackground();
             }
-            
+
             // Still show the summary after a delay
             setTimeout(function() {
               showCachedDocsSummary();
@@ -284,11 +282,11 @@
           })
           .getActiveDocumentInfo();
       }
-      
+
       // Refresh a specific part's document cache (for targeted refreshes)
       function refreshPartCache(part) {
         const now = Date.now();
-        
+
         switch(part) {
           case 1:
             logMessage('Refreshing Part 1 document preload...');
@@ -320,14 +318,14 @@
             loadPart3InBackground();
         }
       }
-      
+
       // Load Part 1 in background
       function loadPart1InBackground() {
         google.script.run
           .withSuccessHandler(function(content) {
             cachedPart1Content = content;
             lastPart1LoadTime = Date.now();
-            
+
             // Calculate word count
             const wordCount = content.trim().split(/\s+/).length;
             logMessage(`✅ Part 1 document preloaded (${wordCount} words)`);
@@ -337,14 +335,14 @@
           })
           .getPart1Doc();
       }
-      
+
       // Load Part 2 in background
       function loadPart2InBackground() {
         google.script.run
           .withSuccessHandler(function(content) {
             cachedPart2Content = content;
             lastPart2LoadTime = Date.now();
-            
+
             // Calculate word count
             const wordCount = content.trim().split(/\s+/).length;
             logMessage(`✅ Part 2 document preloaded (${wordCount} words)`);
@@ -354,17 +352,17 @@
           })
           .getPart2Doc();
       }
-      
+
       // Load Part 3 in background
       function loadPart3InBackground() {
         google.script.run
           .withSuccessHandler(function(content) {
             cachedPart3Content = content;
             lastPart3LoadTime = Date.now();
-            
+
             // Calculate word count
             const wordCount = content.trim().split(/\s+/).length;
-            
+
             // Check for warnings or suspiciously small word counts
             if (content.includes('WARNING: Incomplete Content Detected')) {
               // Extract word count from warning message
@@ -391,35 +389,35 @@
           .withSuccessHandler(function(text) {
             // Check if there's actually text selected
             const hasSelection = text && text.trim() !== '' && text !== 'No text selected';
-            
+
             // Update the UI with selected text
             if (hasSelection) {
               const debugText = text.substring(0, 250) + (text.length > 250 ? '...' : '');
               logMessage('Success handler called with text: ' + debugText);
-              
+
               // Calculate word count
               const wordCount = text.trim().split(/\s+/).length;
-              
+
               // Truncate to 250 characters
               const truncatedText = text.substring(0, 250);
               const hasMore = text.length > 250;
-              
+
               // Display truncated text with word count and indication if truncated
-              document.getElementById('selected-text').innerHTML = 
-                truncatedText + 
-                (hasMore ? '...' : '') + 
+              document.getElementById('selected-text').innerHTML =
+                truncatedText +
+                (hasMore ? '...' : '') +
                 `\n\n[${wordCount} words total]`;
             } else {
               // No text selected
               logMessage('No text currently selected');
-              
+
               // Show placeholder with instructions
-              document.getElementById('selected-text').innerHTML = 
+              document.getElementById('selected-text').innerHTML =
                 '<div style="color: #e67e22; padding: 5px; font-style: italic;">' +
                 'No text currently selected. Select text in the document to include it in the prompt.' +
                 '</div>';
             }
-            
+
             // Save selection to global variable on server (even if empty)
             google.script.run
               .withSuccessHandler(function() {
@@ -429,7 +427,7 @@
           })
           .withFailureHandler(function(error) {
             logMessage('Error: ' + error);
-            document.getElementById('selected-text').innerHTML = 
+            document.getElementById('selected-text').innerHTML =
               '<div style="color: #e74c3c; padding: 5px;">' +
               'Error getting selection: ' + error +
               '</div>';
@@ -441,7 +439,7 @@
       function showCachedDocsSummary() {
         // Create a compact formatted summary of preloaded documents
         let summaryHTML = '<div style="padding: 5px; background-color: #f8f9fa; border-radius: 4px; font-size: 12px;">';
-        
+
         // Create a table-like layout for compact display
         summaryHTML += '<table style="width: 100%; border-collapse: collapse;">';
         summaryHTML += '<tr style="border-bottom: 1px solid #eee;">' +
@@ -450,7 +448,7 @@
                       '<th style="text-align: right; width: 50px;">Words</th>' +
                       '<th style="text-align: right; width: 40px;">Age</th>' +
                       '</tr>';
-        
+
         // Part 1 summary - compact row
         if (cachedPart1Content) {
           const part1WordCount = cachedPart1Content.trim().split(/\s+/).length;
@@ -467,7 +465,7 @@
                         '<td colspan="3"><span style="color: #7f8c8d;">Not preloaded</span></td>' +
                         '</tr>';
         }
-        
+
         // Part 2 summary - compact row
         if (cachedPart2Content) {
           const part2WordCount = cachedPart2Content.trim().split(/\s+/).length;
@@ -484,12 +482,12 @@
                         '<td colspan="3"><span style="color: #7f8c8d;">Not preloaded</span></td>' +
                         '</tr>';
         }
-        
+
         // Part 3 summary - compact row
         if (cachedPart3Content) {
           const part3WordCount = cachedPart3Content.trim().split(/\s+/).length;
           const part3Age = Math.round((Date.now() - lastPart3LoadTime) / 1000);
-          
+
           if (cachedPart3Content.includes('WARNING: Incomplete Content Detected') || part3WordCount < 1000) {
             // Extract word count from warning message if available
             const match = cachedPart3Content.match(/Only (\d+) words were loaded/);
@@ -514,10 +512,10 @@
                         '<td colspan="3"><span style="color: #7f8c8d;">Not preloaded</span></td>' +
                         '</tr>';
         }
-        
+
         summaryHTML += '</table>';
         summaryHTML += '</div>';
-        
+
         // Display in the manuscript context area
         document.getElementById('manuscript-context').innerHTML = summaryHTML;
       }
@@ -533,19 +531,19 @@
           })
           .showSidebar();
       }
-      
+
       // Force refresh of document cache and update UI
       function refreshDocCache() {
         logMessage('🔄 Forcing refresh of all document preloads...');
-        
+
         // Reset all timestamps to force refresh
         lastPart1LoadTime = 0;
         lastPart2LoadTime = 0;
         lastPart3LoadTime = 0;
-        
+
         // Show loading animation in the table
         showCachedDocsSummary();
-        
+
         // Add loading indicators to all rows
         const rows = document.querySelectorAll('#manuscript-context table tr');
         for (let i = 1; i < rows.length; i++) { // Skip header row
@@ -555,10 +553,10 @@
             if (rows[i].cells.length > 3) rows[i].cells[3].innerHTML = '0s';
           }
         }
-        
+
         // Call the refreshPartCache function to refresh all parts
         refreshPartCache(); // With no parameter, it will refresh all parts
-        
+
         // After a delay, show the summary
         setTimeout(function() {
           showCachedDocsSummary();
@@ -576,12 +574,12 @@
         // Default if none selected
         return "put-in-artifacts";
       }
-      
+
       // Generate prompt and copy to clipboard
       function generatePromptAndCopyToClipboard() {
         const selectedPrompt = getSelectedPromptOption();
         logMessage(`generatePromptAndCopyToClipboard called with prompt option: ${selectedPrompt}`);
-        
+
         google.script.run
           .withSuccessHandler(function(promptText) {
             try {
@@ -596,14 +594,14 @@
           })
           .generatePromptWithOption(selectedPrompt);
       }
-      
+
       // Copy with retry logic - will try Navigator API first, then fallback, with 3 retries
       function copyWithRetry(text, attemptCount, maxRetries = 3) {
         logMessage(`🔄 Copy attempt ${attemptCount + 1}/${maxRetries + 1}...`);
-        
+
         // Show brief feedback to user
         showTemporaryStatus('Copying to clipboard...');
-        
+
         // Use Navigator clipboard API which is more modern and reliable
         if (navigator.clipboard && window.isSecureContext) {
           navigator.clipboard.writeText(text)
@@ -613,10 +611,10 @@
             })
             .catch(err => {
               logMessage(`❌ Navigator API attempt ${attemptCount + 1} failed: ${err}`);
-              
+
               if (attemptCount < maxRetries) {
                 showTemporaryStatus(`Retrying copy (${attemptCount + 2}/${maxRetries + 1})...`, 'warning');
-                
+
                 // Wait a bit before retrying (exponential backoff)
                 setTimeout(() => {
                   copyWithRetry(text, attemptCount + 1, maxRetries);
@@ -624,7 +622,7 @@
               } else {
                 logMessage('Navigator API failed after all retries, trying fallback method...');
                 showTemporaryStatus('Trying alternative copy method...', 'warning');
-                
+
                 // Try fallback after all Navigator API retries fail
                 fallbackCopyToClipboard(text, 0);
               }
@@ -635,13 +633,13 @@
           fallbackCopyToClipboard(text, 0);
         }
       }
-      
+
       // Shows a temporary status message to the user
       function showTemporaryStatus(message, type = 'info') {
         // Create status element if it doesn't exist
         var statusId = 'clipboard-status';
         var statusEl = document.getElementById(statusId);
-        
+
         if (!statusEl) {
           statusEl = document.createElement('div');
           statusEl.id = statusId;
@@ -656,7 +654,7 @@
           statusEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
           document.body.appendChild(statusEl);
         }
-        
+
         // Set style based on type
         switch(type) {
           case 'success':
@@ -675,10 +673,10 @@
             statusEl.style.backgroundColor = '#3498db';
             statusEl.style.color = 'white';
         }
-        
+
         statusEl.textContent = message;
         statusEl.style.display = 'block';
-        
+
         // Auto-hide after 3 seconds unless it's an error
         if (type !== 'error') {
           setTimeout(function() {
@@ -686,16 +684,16 @@
           }, 3000);
         }
       }
-      
+
       // Fallback copy method using execCommand with retries
       function fallbackCopyToClipboard(text, attemptCount, maxRetries = 3) {
         logMessage(`🔄 Fallback copy attempt ${attemptCount + 1}/${maxRetries + 1}...`);
         showTemporaryStatus('Trying alternate copy method...', 'info');
-        
+
         try {
           var textArea = document.createElement('textarea');
           textArea.value = text;
-          
+
           // Make the textarea visible but off-screen - important for some browsers
           textArea.style.position = 'fixed';
           textArea.style.left = '0';
@@ -704,22 +702,22 @@
           textArea.style.height = '2em';
           textArea.style.opacity = '0.01'; // Almost invisible but not completely
           document.body.appendChild(textArea);
-          
+
           textArea.focus();
           textArea.select();
-          
+
           var successful = document.execCommand('copy');
           document.body.removeChild(textArea);
-          
+
           if (successful) {
             logMessage('✅ Prompt copied to clipboard using fallback method!');
             showTemporaryStatus('✅ Copied to clipboard!', 'success');
           } else {
             logMessage(`❌ Fallback attempt ${attemptCount + 1} failed`);
-            
+
             if (attemptCount < maxRetries) {
               showTemporaryStatus(`Retrying alternate copy (${attemptCount + 2}/${maxRetries + 1})...`, 'warning');
-              
+
               // Wait before retrying with exponential backoff
               setTimeout(() => {
                 fallbackCopyToClipboard(text, attemptCount + 1, maxRetries);
@@ -734,10 +732,10 @@
           }
         } catch (err) {
           logMessage(`❌ Fallback attempt ${attemptCount + 1} error: ${err}`);
-          
+
           if (attemptCount < maxRetries) {
             showTemporaryStatus(`Retrying alternate copy (${attemptCount + 2}/${maxRetries + 1})...`, 'warning');
-            
+
             // Wait before retrying with exponential backoff
             setTimeout(() => {
               fallbackCopyToClipboard(text, attemptCount + 1, maxRetries);
@@ -751,11 +749,11 @@
           }
         }
       }
-      
+
       // Last resort: show text for manual copy
       function showCopyPrompt(text) {
         logMessage('⚠️ Showing manual copy interface as last resort');
-        
+
         // Create a modal dialog
         var copyArea = document.createElement('div');
         copyArea.style.position = 'fixed';
@@ -770,17 +768,17 @@
         copyArea.style.borderRadius = '5px';
         copyArea.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
         copyArea.style.overflow = 'auto';
-        
+
         // Create header
         var header = document.createElement('h3');
         header.innerText = 'Manual Copy Required';
         header.style.color = '#e74c3c';
         header.style.margin = '0 0 15px 0';
-        
+
         // Create instructions
         var instructions = document.createElement('p');
         instructions.innerText = 'Automatic clipboard operations failed. Please use Ctrl+C (or ⌘+C on Mac) to manually copy this text:';
-        
+
         // Create copy button
         var copyButton = document.createElement('button');
         copyButton.innerText = 'Try Copy Again';
@@ -807,7 +805,7 @@
             statusText.style.color = 'red';
           }
         };
-        
+
         // Create close button
         var closeButton = document.createElement('button');
         closeButton.innerText = 'Close';
@@ -820,12 +818,12 @@
         closeButton.onclick = function() {
           document.body.removeChild(copyArea);
         };
-        
+
         // Create status text
         var statusText = document.createElement('span');
         statusText.innerText = 'Ready to copy';
         statusText.style.marginLeft = '10px';
-        
+
         // Create textarea
         var textDisplay = document.createElement('textarea');
         textDisplay.value = text;
@@ -837,24 +835,24 @@
         textDisplay.style.border = '1px solid #ccc';
         textDisplay.style.borderRadius = '3px';
         textDisplay.style.fontSize = '14px';
-        
+
         // Button container
         var buttonContainer = document.createElement('div');
         buttonContainer.appendChild(copyButton);
         buttonContainer.appendChild(closeButton);
         buttonContainer.appendChild(statusText);
-        
+
         // Build the modal
         copyArea.appendChild(header);
         copyArea.appendChild(instructions);
         copyArea.appendChild(textDisplay);
         copyArea.appendChild(buttonContainer);
-        
+
         document.body.appendChild(copyArea);
-        
+
         // Select all text for easy copying
         textDisplay.select();
-        
+
         // Try to add keyboard shortcut focus listener
         textDisplay.addEventListener('keydown', function(e) {
           // Detect Ctrl+C or Cmd+C
@@ -864,16 +862,16 @@
           }
         });
       }
-      
+
       // Get Part 1 document and generate prompt
       function getPart1DocAndPrompt() {
         logMessage('Getting Part 1 document...');
-        
+
         // First get the latest selection, then use cached document or load if needed
         logMessage('Updating selected text first...');
         getSelectionThenUsePart1();
       }
-      
+
       // Helper function to get selection before using Part 1
       function getSelectionThenUsePart1() {
         google.script.run
@@ -885,7 +883,7 @@
             } else {
               logMessage('⚠️ No text currently selected');
             }
-            
+
             // Save selection to global variable on server (even if empty)
             google.script.run
               .withSuccessHandler(function() {
@@ -907,7 +905,7 @@
           })
           .getSelectedText();
       }
-      
+
       // Helper function to use cached Part 1 or load if needed
       function useCachedOrLoadPart1() {
         // Check if we have a valid cache
@@ -918,13 +916,13 @@
         } else {
           // Cache is invalid or missing, need to load
           logMessage('Cache expired or missing, loading Part 1 document (takes about 15s)...');
-          
+
           // Reset the timestamp to force refresh
           lastPart1LoadTime = 0;
-          
+
           // Update the status in the compact table instead of replacing it
           showCachedDocsSummary();
-          
+
           // Add a loading indicator to the Part 1 row only
           const part1Row = document.querySelector('#manuscript-context table tr:nth-child(2)');
           if (part1Row) {
@@ -932,35 +930,35 @@
             part1Row.cells[2].innerHTML = '...';
             part1Row.cells[3].innerHTML = '0s';
           }
-          
+
           google.script.run
             .withSuccessHandler(function(content) {
               // Update cache
               cachedPart1Content = content;
               lastPart1LoadTime = Date.now();
-              
+
               // Process the content
               processPart1Content(content);
             })
             .withFailureHandler(function(error) {
               logMessage('Error: ' + error);
               // Show error message
-              document.getElementById('manuscript-context').innerHTML = 
+              document.getElementById('manuscript-context').innerHTML =
                 '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
                 '<strong>⚠️ Error</strong><br><br>' + error + '</div>';
             })
             .getPart1Doc();
         }
       }
-      
+
       // Process the Part 1 content (either from cache or freshly loaded)
       function processPart1Content(content) {
         // Check for access errors
         if (content.includes('Access Error') || content.includes('Error Accessing Document')) {
           logMessage('⚠️ Document access error detected');
-          
+
           // Show warning message in the manuscript context area
-          document.getElementById('manuscript-context').innerHTML = 
+          document.getElementById('manuscript-context').innerHTML =
             '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
             '<strong>⚠️ Document Access Error</strong><br><br>' +
             'Could not access the Part 1 document. This document may not be shared with your Google account.<br><br>' +
@@ -970,7 +968,7 @@
             '3. Open the document directly in Google Docs first to accept any sharing invitations<br><br>' +
             '<em>Note: The prompt will still be generated using placeholder text for Part 1.</em>' +
             '</div>';
-            
+
           // Continue with prompt generation despite error
           const selectedPrompt = getSelectedPromptOption();
           logMessage(`Continuing with prompt generation using placeholder content and option "${selectedPrompt}"...`);
@@ -978,27 +976,27 @@
         } else {
           // Normal flow - no errors
           var wordCount = content.trim().split(/\s+/).length;
-          
+
           // Always show the cache summary table instead of replacing it
           showCachedDocsSummary();
-          
+
           const selectedPrompt = getSelectedPromptOption();
           logMessage(`Part 1 ready (${wordCount} words), generating prompt with option "${selectedPrompt}"...`);
-          
+
           // Generate and copy the prompt
           generatePromptAndCopyToClipboard();
         }
       }
-      
+
       // Get Part 2 document and generate prompt
       function getPart2DocAndPrompt() {
         logMessage('Getting Part 2 document (using PART1_SUMMARY constant instead of loading Part 1)...');
-        
+
         // First get the latest selection, then use cached document or load if needed
         logMessage('Updating selected text first...');
         getSelectionThenUsePart2();
       }
-      
+
       // Helper function to get selection before using Part 2
       function getSelectionThenUsePart2() {
         google.script.run
@@ -1010,7 +1008,7 @@
             } else {
               logMessage('⚠️ No text currently selected');
             }
-            
+
             // Save selection to global variable on server (even if empty)
             google.script.run
               .withSuccessHandler(function() {
@@ -1032,7 +1030,7 @@
           })
           .getSelectedText();
       }
-      
+
       // Helper function to use cached Part 2 or load if needed
       function useCachedOrLoadPart2() {
         // Check if we have a valid cache
@@ -1043,13 +1041,13 @@
         } else {
           // Cache is invalid or missing, need to load
           logMessage('Cache expired or missing, loading Part 2 document (takes about 15s)...');
-          
+
           // Reset the timestamp to force refresh
           lastPart2LoadTime = 0;
-          
+
           // Update the status in the compact table instead of replacing it
           showCachedDocsSummary();
-          
+
           // Add a loading indicator to the Part 2 row only
           const part2Row = document.querySelector('#manuscript-context table tr:nth-child(3)');
           if (part2Row) {
@@ -1057,35 +1055,35 @@
             part2Row.cells[2].innerHTML = '...';
             part2Row.cells[3].innerHTML = '0s';
           }
-          
+
           google.script.run
             .withSuccessHandler(function(content) {
               // Update cache
               cachedPart2Content = content;
               lastPart2LoadTime = Date.now();
-              
+
               // Process the content
               processPart2Content(content);
             })
             .withFailureHandler(function(error) {
               logMessage('Error: ' + error);
               // Show error message
-              document.getElementById('manuscript-context').innerHTML = 
+              document.getElementById('manuscript-context').innerHTML =
                 '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
                 '<strong>⚠️ Error</strong><br><br>' + error + '</div>';
             })
             .getPart2Doc();
         }
       }
-      
+
       // Process the Part 2 content (either from cache or freshly loaded)
       function processPart2Content(content) {
         // Check for access errors
         if (content.includes('Access Error') || content.includes('Error Accessing Document')) {
           logMessage('⚠️ Document access error detected');
-          
+
           // Show warning message in the manuscript context area
-          document.getElementById('manuscript-context').innerHTML = 
+          document.getElementById('manuscript-context').innerHTML =
             '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
             '<strong>⚠️ Document Access Error</strong><br><br>' +
             'Could not access the Part 2 document. This document may not be shared with your Google account.<br><br>' +
@@ -1095,7 +1093,7 @@
             '3. Open the document directly in Google Docs first to accept any sharing invitations<br><br>' +
             '<em>Note: The prompt will still be generated using the Part 1 summary and placeholder text for Part 2.</em>' +
             '</div>';
-            
+
           // Continue with prompt generation despite error
           const selectedPrompt = getSelectedPromptOption();
           logMessage(`Continuing with prompt generation using placeholder content and option "${selectedPrompt}"...`);
@@ -1103,27 +1101,27 @@
         } else {
           // Normal flow - no errors
           var wordCount = content.trim().split(/\s+/).length;
-          
+
           // Always show the cache summary table instead of replacing it
           showCachedDocsSummary();
-          
+
           const selectedPrompt = getSelectedPromptOption();
           logMessage(`Part 2 ready (${wordCount} words), generating prompt with PART1_SUMMARY and option "${selectedPrompt}"...`);
-          
+
           // Generate and copy the prompt
           generatePromptAndCopyToClipboard();
         }
       }
-      
+
       // Get Part 3 document and generate prompt
       function getPart3DocAndPrompt() {
         logMessage('Getting Part 3 document...');
-        
+
         // First get the latest selection, then use cached document or load if needed
         logMessage('Updating selected text first...');
         getSelectionThenUsePart3();
       }
-      
+
       // Helper function to get selection before using Part 3
       function getSelectionThenUsePart3() {
         google.script.run
@@ -1135,7 +1133,7 @@
             } else {
               logMessage('⚠️ No text currently selected');
             }
-            
+
             // Save selection to global variable on server (even if empty)
             google.script.run
               .withSuccessHandler(function() {
@@ -1157,7 +1155,7 @@
           })
           .getSelectedText();
       }
-      
+
       // Helper function to use cached Part 3 or load if needed
       function useCachedOrLoadPart3() {
         // Check if we have a valid cache
@@ -1168,13 +1166,13 @@
         } else {
           // Cache is invalid or missing, need to load
           logMessage('Cache expired or missing, loading Part 3 document (takes about 15s)...');
-          
+
           // Reset the timestamp to force refresh
           lastPart3LoadTime = 0;
-          
+
           // Update the status in the compact table instead of replacing it
           showCachedDocsSummary();
-          
+
           // Add a loading indicator to the Part 3 row only
           const part3Row = document.querySelector('#manuscript-context table tr:nth-child(4)');
           if (part3Row) {
@@ -1182,40 +1180,40 @@
             part3Row.cells[2].innerHTML = '...';
             part3Row.cells[3].innerHTML = '0s';
           }
-          
+
           google.script.run
             .withSuccessHandler(function(content) {
               // Update cache
               cachedPart3Content = content;
               lastPart3LoadTime = Date.now();
-              
+
               // Process the content
               processPart3Content(content);
             })
             .withFailureHandler(function(error) {
               logMessage('Error: ' + error);
               // Show error message
-              document.getElementById('manuscript-context').innerHTML = 
+              document.getElementById('manuscript-context').innerHTML =
                 '<div style="color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c;">' +
                 '<strong>⚠️ Error</strong><br><br>' + error + '</div>';
             })
             .getPart3Doc();
         }
       }
-      
+
       // Process the Part 3 content
       function processPart3Content(content) {
         // Check for access errors or warning about incomplete content
         if (content.includes('Access Error') || content.includes('Error Accessing Document')) {
           logMessage('⚠️ Document access error detected');
-          
+
           // Show the cache summary table first
           showCachedDocsSummary();
-          
+
           // Create and append warning div after the table
           const errorDiv = document.createElement('div');
           errorDiv.style.cssText = 'color: #e74c3c; background-color: #fadbd8; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c; margin-top: 10px;';
-          errorDiv.innerHTML = 
+          errorDiv.innerHTML =
             '<strong>⚠️ Document Access Error</strong><br><br>' +
             'Could not access the Part 3 document. This document may not be shared with your Google account.<br><br>' +
             '<strong>To fix this issue:</strong><br>' +
@@ -1223,25 +1221,25 @@
             '2. Ask the document owner to share it with your email address<br>' +
             '3. Open the document directly in Google Docs first to accept any sharing invitations<br><br>' +
             '<em>Note: The prompt will still be generated using Part 2 summary and placeholder text for Part 3.</em>';
-          
+
           // Append error message after the table
           document.getElementById('manuscript-context').appendChild(errorDiv);
-          
+
           // Continue with prompt generation despite error
           const selectedPrompt = getSelectedPromptOption();
           logMessage(`Continuing with prompt generation using placeholder content and option "${selectedPrompt}"...`);
           generatePromptAndCopyToClipboard();
         } else if (content.includes('WARNING: Incomplete Content Detected')) {
           logMessage('⚠️ Incomplete content warning detected');
-          
+
           // Parse the word count from the content
           const wordCountMatch = content.match(/Only (\d+) words were loaded/);
           const wordCount = wordCountMatch ? wordCountMatch[1] : 'unknown';
-          
+
           // Show warning message in the manuscript context area with append to preserve table
           const warningDiv = document.createElement('div');
           warningDiv.style.cssText = 'color: #e67e22; background-color: #fef9e7; padding: 10px; border-radius: 4px; border: 1px solid #e67e22; margin-top: 10px;';
-          warningDiv.innerHTML = 
+          warningDiv.innerHTML =
             '<strong>⚠️ Incomplete Document Warning</strong><br><br>' +
             `Only ${wordCount} words were loaded for Part 3, but it should be ~11,000 words.<br><br>` +
             '<strong>Possible causes:</strong><br>' +
@@ -1250,13 +1248,13 @@
             '3. The document may be empty or contain limited content<br>' +
             '4. There may be a technical issue with the document export<br><br>' +
             '<em>Note: The prompt will still be generated, but may not contain complete Part 3 content.</em>';
-            
+
           // Show the table
           showCachedDocsSummary();
-          
+
           // Append the warning after the table
           document.getElementById('manuscript-context').appendChild(warningDiv);
-            
+
           // Continue with prompt generation despite warning
           const selectedPrompt = getSelectedPromptOption();
           logMessage(`Continuing with prompt generation using incomplete content (${wordCount} words) and option "${selectedPrompt}"...`);
@@ -1264,30 +1262,30 @@
         } else {
           // Normal flow - no errors
           var wordCount = content.trim().split(/\s+/).length;
-          
+
           // Check if content seems suspiciously short but didn't trigger the warning
           if (wordCount < 1000) {
             // Show the table first
             showCachedDocsSummary();
-            
+
             // Add warning message after the table
             const warningDiv = document.createElement('div');
             warningDiv.style.cssText = 'color: #e67e22; background-color: #fef9e7; padding: 10px; border-radius: 4px; border: 1px solid #e67e22; margin-top: 10px;';
-            warningDiv.innerHTML = 
+            warningDiv.innerHTML =
               '<strong>⚠️ Part 3 Warning:</strong> Only ' + wordCount + ' words loaded (expected ~11,000 words)<br>' +
               'The document appears to be incomplete. The prompt may not contain all necessary content.';
             document.getElementById('manuscript-context').appendChild(warningDiv);
-            
+
             const selectedPrompt = getSelectedPromptOption();
             logMessage(`⚠️ Part 3 content suspiciously short (${wordCount} words) but proceeding with option "${selectedPrompt}"...`);
           } else {
             // Show the table with no warnings
             showCachedDocsSummary();
-            
+
             const selectedPrompt = getSelectedPromptOption();
             logMessage(`Part 3 ready (${wordCount} words), generating prompt with option "${selectedPrompt}"...`);
           }
-          
+
           // Generate and copy the prompt
           generatePromptAndCopyToClipboard();
         }
